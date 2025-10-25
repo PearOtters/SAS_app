@@ -17,10 +17,11 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from django import include
+from django.urls import include
 from planner import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('plan/', include('planner.urls')),
+    path('', views.redirect_to_index, name='redirect_to_index'),
+    path('planner/', include('planner.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
