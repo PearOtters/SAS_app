@@ -5,6 +5,7 @@ app_name = 'planner'
 
 urlpatterns = [
     path('', views.index, name="index"),
+    path('dashboard/', views.dashboard, name="dashboard"), 
     path('events/<slug:event_slug>/', views.view_event, name="view_event"),
     path('venue/<slug:venue_slug>/', views.view_venue, name="view_venue"),
     path('register/', views.user_register, name="register"),

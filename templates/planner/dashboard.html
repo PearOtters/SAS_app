@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planner Dashboard | Glasgow Map</title>
+<!-- Load Leaflet CSS and JS via CDN -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/SVRMgfkzGOVNAK3ZA="
+     crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20n6a9Kx6I3w1Ch7I5sB54mG+LzR4zK8X8yU6E/Kz5z="
+     crossorigin=""></script>
+     
+<style>
+/* --- BASE STYLES (Consistency with other templates) --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #1a1a1a;
+    color: #ffffff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.page-container {
+    width: 100%;
+    max-width: 1400px;
+    border: 3px solid #00bcd4;
+    border-radius: 8px;
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    z-index: 1;
+}
+
+/* Background Blobs */
+.gradient-orb-1 {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(79, 70, 229, 0.3) 0%, rgba(79, 70, 229, 0) 70%);
+    border-radius: 50%;
+    top: -150px;
+    right: -100px;
+    filter: blur(80px);
+    z-index: 0;
+}
+
+.gradient-orb-2 {
+    position: absolute;
+    width: 450px;
+    height: 450px;
+    background: radial-gradient(circle, rgba(147, 51, 234, 0.3) 0%, rgba(147, 51, 234, 0) 70%);
+    border-radius: 50%;
+    bottom: -100px;
+    left: -100px;
+    filter: blur(80px);
+    z-index: 0;
+}
+
+/* --- MAP & DASHBOARD STYLES --- */
+
+.dashboard-header {
+    background: rgba(30, 30, 30, 0.8);
+    padding: 25px 40px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.welcome-text {
+    font-size: 36px;
+    font-weight: 700;
+    color: #8b5cf6;
+}
+
+.auth-links a {
+    text-decoration: none;
+    color: #ffffff;
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    margin-left: 10px;
+    transition: all 0.3s ease;
+}
+
+.logout-button {
+    text-decoration: none;
+    color: #a0a0a0;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+    margin-left: 10px;
+    transition: all 0.3s ease;
+}
+
+.logout-button:hover {
+    color: #ffffff;
+    border-color: #7dd3fc;
+}
+
+.content-title {
+    font-size: 28px;
+    color: #7dd3fc;
+    margin-bottom: 15px;
+    border-left: 5px solid #7dd3fc;
+    padding-left: 15px;
+}
+
+/* Map Container */
+#mapid {
+    height: 600px; /* Set a fixed height for the map */
+    width: 100%;
+    border-radius: 12px;
+    border: 3px solid #6366f1; /* Neon border for the map */
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.5); /* Neon glow effect */
+    transition: all 0.5s ease;
+}
+
+/* Custom Marker Styling (Neon Pinpoint) */
+.leaflet-marker-icon.neon-pin {
+    filter: drop-shadow(0 0 5px #8b5cf6) drop-shadow(0 0 10px #6366f1);
+    /* Basic animation */
+    animation: pulse 1.5s infinite alternate;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.1); }
+}
+
+/* Leaflet Popup Styling for Dark Theme */
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+}
+.leaflet-popup-content-wrapper a {
+    color: #7dd3fc !important;
+    font-weight: bold;
+    text-decoration: none;
+}
+.leaflet-popup-content {
+    font-size: 16px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 900px) {
+    #mapid {
+        height: 450px;
+    }
+}
+
+@media (max-width: 640px) {
+    .page-container {
+        padding: 20px;
+    }
+    .dashboard-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 20px;
+    }
+    .welcome-text {
+        font-size: 28px;
+        text-align: center;
+    }
+    .auth-links {
+        display: flex;
+        justify-content: center;
+        margin-top: 15px;
+    }
+    .auth-links a {
+        margin: 0 5px;
+    }
+    .content-title {
+        font-size: 24px;
+    }
+}
+</style>
+</head>
+<body>
+<div class="gradient-orb-1"></div>
+<div class="gradient-orb-2"></div>
+
+<div class="page-container">
+    <div class="dashboard-header">
+        <div class="welcome-text">
+            Hello, {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}!
+        </div>
+        <div class="auth-links">
+            <!-- Link directly to logout -->
+            <a href="{% url 'planner:logout' %}" class="logout-button">Logout</a>
+        </div>
+    </div>
+
+    <h2 class="content-title">Public Events Map (Glasgow)</h2>
+
+    <!-- Map Container -->
+    <div id="mapid"></div>
+
+    <!-- Hidden Data Attribute for JS to read Events (Mocking Lat/Lon) -->
+    <!-- The JSON is generated tightly inline to reduce the chance of whitespace errors. -->
+    <div id="event-data" data-events='[
+    {% for event in events %}{
+        "title": "{{ event.title|escapejs }}",
+        "slug": "{{ event.slug|escapejs }}",
+        "venue": "{{ event.venue.name|escapejs }}",
+        "lat": {{ 55.8642|add:forloop.counter|div:10000.0 }},
+        "lng": {{ -4.2518|add:forloop.counter|div:10000.0|sub:forloop.counter0|div:20000.0 }}
+    }{% if not forloop.last %},{% endif %}{% endfor %}
+    ]'></div>
+
+
+</div>
+
+<script>
+    // --- MAP INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', function () {
+        const eventsDataElement = document.getElementById('event-data');
+        if (!eventsDataElement) return;
+
+        let events;
+        try {
+            // FIX: Use a regex to safely clean whitespace before attempting to parse.
+            // This is the most robust way to handle template generated JSON in a data attribute.
+            const rawData = eventsDataElement.dataset.events.replace(/\s+/g, ' ').trim();
+            
+            // Check if the result is just '[]' or an empty string, and handle it safely
+            events = JSON.parse(rawData.length > 2 ? rawData : '[]');
+        } catch (e) {
+            // If parsing fails, log the error and stop execution.
+            console.error("Failed to parse event data. Raw content was: ", eventsDataElement.dataset.events, "Error:", e);
+            
+            // Fallback: Display simple message if map fails to load.
+            const mapContainer = document.getElementById('mapid');
+            if (mapContainer) {
+                mapContainer.innerHTML = '<div style="color: #ff6b6b; padding: 20px; text-align: center;">Error loading event data. Check server logs for malformed JSON.</div>';
+                mapContainer.style.border = '2px dashed #ff6b6b';
+            }
+            return; 
+        }
+        
+        // Check if Leaflet is properly loaded before proceeding
+        if (typeof L === 'undefined' || typeof L.map !== 'function') {
+             console.error("Leaflet library (L) is not loaded correctly. Check CDN link.");
+             return;
+        }
+
+        // Default Glasgow Coordinates
+        const glasgowCoords = [55.8642, -4.2518]; 
+        
+        // Initialize the map
+        const map = L.map('mapid', { 
+            center: glasgowCoords, 
+            zoom: 13,
+            zoomControl: false 
+        });
+
+        // Add a dark basemap tile layer (CartoDB Dark Matter is a good fit for neon theme)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Define a custom icon (using default marker path for simplicity, relying on CSS for neon effect)
+        const NeonIcon = L.Icon.Default.extend({
+            options: {
+                className: 'neon-pin' 
+            }
+        });
+        const neonIcon = new NeonIcon();
+
+
+        // --- PLOT EVENTS ---
+        const validEvents = events.filter(event => event.lat && event.lng);
+
+        validEvents.forEach(event => {
+            const marker = L.marker([event.lat, event.lng], { icon: neonIcon }).addTo(map);
+
+            // Create a beautiful popup with a link
+            const popupContent = `
+                <div style="font-weight: 700; color: #8b5cf6; margin-bottom: 5px;">${event.title}</div>
+                <div>@ ${event.venue}</div>
+                <div style="margin-top: 10px;">
+                    <a href="{% url 'planner:view_event' event_slug='DUMMY_SLUG' %}".replace('DUMMY_SLUG', event.slug)">View Details →</a>
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent, {
+                closeButton: false,
+                offset: [0, -10]
+            });
+            
+            // Optional: Make marker pulsate on mouseover
+            marker.on('mouseover', function (e) {
+                this.openPopup();
+                this.getElement().style.animationDuration = '0.5s'; 
+            });
+            marker.on('mouseout', function (e) {
+                this.closePopup();
+                this.getElement().style.animationDuration = '1.5s'; 
+            });
+        });
+        
+        // Optional: Fit map view to markers if events exist
+        if (validEvents.length > 0) {
+            const bounds = L.latLngBounds(validEvents.map(e => [e.lat, e.lng]));
+            map.fitBounds(bounds.pad(0.2)); // Pad to ensure markers aren't on the edge
+        }
+    });
+</script>
+</body>
+</html>

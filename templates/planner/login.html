@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - Welcome Back</title>
+<style>
+/* --- FULL CSS STYLESHEET RESTORED --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #1a1a1a;
+    color: #ffffff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 1400px;
+    border: 3px solid #00bcd4;
+    border-radius: 8px; /* Added missing border-radius */
+    padding: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 60px;
+    position: relative;
+    min-height: 700px; /* Increased min-height for better balance */
+}
+
+.left-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 30px;
+}
+
+.welcome-text {
+    font-size: clamp(48px, 6vw, 80px); /* Using clamp for responsiveness */
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -2px;
+}
+
+.skip-button-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.skip-button {
+    background: transparent;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    padding: 15px 30px; /* Adjusted padding */
+    font-size: 20px; /* Adjusted font size */
+    font-style: italic;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: fit-content;
+    text-decoration: none;
+    border-radius: 8px; /* Added border radius */
+}
+
+.skip-button:hover {
+    background: rgba(255, 255, 255, 0.1); /* Changed hover effect to match register page */
+    transform: translateX(5px);
+    color: #ffffff;
+}
+
+.dashed-line {
+    flex: 1;
+    height: 2px;
+    background-image: linear-gradient(to right, #ffffff 50%, transparent 50%);
+    background-size: 20px 2px;
+    background-repeat: repeat-x;
+}
+
+.right-section {
+    flex: 0 0 450px;
+    position: relative;
+    z-index: 2; /* Increased z-index */
+}
+
+/* Updated Blob Styles to match register/view_event */
+.blob-1 {
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(147, 51, 234, 0.6) 0%, rgba(147, 51, 234, 0) 70%);
+    border-radius: 50%;
+    top: -100px;
+    right: 200px;
+    filter: blur(60px);
+    z-index: 0;
+}
+
+.blob-2 {
+    position: absolute;
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, rgba(79, 70, 229, 0.5) 0%, rgba(79, 70, 229, 0) 70%);
+    border-radius: 50%;
+    bottom: -50px;
+    right: 50px;
+    filter: blur(60px);
+    z-index: 0;
+}
+
+
+.login-card {
+    background: rgba(20, 20, 20, 0.8);
+    border: 3px solid rgba(255, 255, 255, 0.1); /* Adjusted border thickness */
+    border-radius: 15px; /* Adjusted border radius */
+    padding: 40px;
+    backdrop-filter: blur(30px); /* Increased blur for stronger effect */
+    position: relative;
+    z-index: 10;
+}
+
+.login-header {
+    margin-bottom: 30px;
+}
+
+.login-header h2 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 8px; /* Adjusted margin */
+    color: #ffffff;
+}
+
+.login-header p {
+    color: #a0a0a0;
+    font-size: 14px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+/* Custom Input Styling (Applied via Django field classes) */
+.form-input,
+.input-wrapper input[type="text"],
+.input-wrapper input[type="password"] {
+    width: 100%;
+    padding: 15px 18px; /* Adjusted padding to match register page */
+    background: transparent !important; /* Ensure transparency */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.form-input:focus,
+.input-wrapper input[type="text"]:focus,
+.input-wrapper input[type="password"]:focus {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.form-input::placeholder {
+    color: #666;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 15px; /* Adjusted position */
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #888; /* Adjusted color */
+    cursor: pointer;
+    font-size: 18px; /* Adjusted size */
+    padding: 5px;
+    transition: color 0.3s ease;
+}
+
+.toggle-password:hover {
+    color: #fff;
+}
+
+
+.remember-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Adjusted gap */
+    margin-bottom: 20px;
+}
+
+.remember-wrapper input[type="checkbox"] {
+    width: 18px; /* Adjusted size */
+    height: 18px; /* Adjusted size */
+    accent-color: #8b5cf6; /* Updated accent color */
+    cursor: pointer;
+}
+
+.remember-wrapper label {
+    font-size: 14px;
+    color: #d0d0d0; /* Adjusted color */
+    cursor: pointer;
+    user-select: none;
+}
+
+.login-button {
+    width: 100%;
+    padding: 15px; /* Adjusted padding */
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); /* Updated gradient */
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 15px;
+}
+
+.login-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+}
+
+.login-button:active {
+    transform: translateY(0);
+}
+
+.forgot-password {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.forgot-password a {
+    color: #8b5cf6; /* Updated color */
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.forgot-password a:hover {
+    text-decoration: underline;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 25px 0;
+}
+
+.divider-line {
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.divider-text {
+    color: #888;
+    font-size: 14px;
+}
+
+.signup-link {
+    text-align: center;
+    font-size: 14px;
+    color: #a0a0a0;
+    margin-bottom: 0px;
+}
+
+.signup-link a {
+    color: #8b5cf6;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.signup-link a:hover {
+    text-decoration: underline;
+}
+
+/* Django Form Error Styling */
+.login-card ul {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 15px;
+}
+.login-card ul.errorlist {
+    color: #ff6b6b; /* Error color */
+    font-size: 14px;
+}
+
+
+/* --- RESPONSIVENESS --- */
+@media (max-width: 1024px) {
+    .container {
+        flex-direction: column;
+        gap: 40px;
+        height: auto;
+        min-height: auto;
+        padding: 40px 20px;
+    }
+
+    .left-section {
+        text-align: center;
+        align-items: center;
+    }
+
+    .dashed-line {
+        display: none;
+    }
+
+    .right-section {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: 450px;
+    }
+
+    .welcome-text {
+        font-size: clamp(36px, 8vw, 60px);
+    }
+}
+
+@media (max-width: 640px) {
+    .container {
+        padding: 20px;
+    }
+    .login-card {
+        padding: 30px 25px;
+    }
+
+    .welcome-text {
+        font-size: 32px;
+    }
+    .skip-button {
+        font-size: 16px;
+        padding: 12px 20px;
+    }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="left-section">
+        <h1 class="welcome-text">Welcome Back!</h1>
+        <a href="{% url 'planner:index' %}" class="skip-button">Skip the lag ?</a>
+    </div>
+
+    <div class="right-section">
+        <div class="blob-1"></div>
+        <div class="blob-2"></div>
+        <div class="login-card">
+            <div class="login-header">
+                <h2>Login</h2>
+                <p>Glad you're back.!</p>
+            </div>
+
+            <form method="post" action="{% url 'planner:login' %}" id="loginForm">
+                {% csrf_token %}
+
+                <!-- Display non-field errors (e.g., "Username/Password mismatch") -->
+                {% if form.non_field_errors %}
+                    {{ form.non_field_errors }}
+                {% endif %}
+
+                <!-- USERNAME FIELD -->
+                <div class="form-group">
+                    {{ form.username.errors }}
+                    <input
+                        type="text"
+                        class="form-input"
+                        placeholder="Username"
+                        id="{{ form.username.id_for_label }}"
+                        name="{{ form.username.name }}"
+                        required
+                        value="{{ form.username.value|default:'' }}"
+                    >
+                </div>
+
+                <!-- PASSWORD FIELD -->
+                <div class="form-group">
+                    {{ form.password.errors }}
+                    <div class="input-wrapper">
+                        <input
+                            type="password"
+                            class="form-input"
+                            placeholder="Password"
+                            id="{{ form.password.id_for_label }}"
+                            name="{{ form.password.name }}"
+                            required
+                        >
+                        <button
+                            type="button"
+                            class="toggle-password"
+                            onclick="togglePassword('{{ form.password.id_for_label }}')"
+                        >
+                            👁️
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Remember Me (Optional) -->
+                <div class="remember-wrapper">
+                    <input type="checkbox" id="remember" name="remember_me">
+                    <label for="remember">Remember me</label>
+                </div>
+                
+                <!-- Hidden field to handle redirection after successful login -->
+                <input type="hidden" name="next" value="{{ next|default:'/' }}">
+
+                <button type="submit" class="login-button">Login</button>
+            </form>
+
+            <div class="forgot-password">
+                <a href="#">Forgot password ?</a>
+            </div>
+
+            <div class="divider">
+                <div class="divider-line"></div>
+                <span class="divider-text">Or</span>
+                <div class="divider-line"></div>
+            </div>
+
+            <div class="signup-link">
+                Don't have an account ? <a href="{% url 'planner:register' %}">Signup</a>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+// Updated togglePassword function to accept ID, essential for dynamic Django IDs
+function togglePassword(inputId) {
+    const passwordInput = document.getElementById(inputId);
+    const toggleButton = passwordInput.nextElementSibling;
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleButton.textContent = '🙈';
+    } else {
+        passwordInput.type = 'password';
+        toggleButton.textContent = '👁️';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Dynamically connect the togglePassword function to the button
+    // This is necessary because Django generates dynamic IDs for form fields.
+    const passwordInputId = '{{ form.password.id_for_label }}';
+    const passwordInput = document.getElementById(passwordInputId);
+
+    if (passwordInput) {
+        const toggleButton = passwordInput.nextElementSibling;
+        if (toggleButton && toggleButton.classList.contains('toggle-password')) {
+            // Re-map the onclick attribute in case the template rendering missed it
+            toggleButton.setAttribute('onclick', `togglePassword('${passwordInputId}')`);
+            
+            // Also ensure the JavaScript function is callable directly (optional but safer)
+            toggleButton.onclick = () => togglePassword(passwordInputId);
+        }
+    }
+});
+</script>
+</body>
+</html>
