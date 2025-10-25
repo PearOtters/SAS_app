@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.template import loader
 from planner.models import *
 from planner.forms import *
+from django.contrib.auth import authenticate, login, logout
 
 # Create your views here.
 
@@ -17,24 +18,30 @@ def index(request):
     return HttpResponse(template.render())
 
 
-def login(request):
+def user_login(request):
     pass
 
-def register(request):
+def user_register(request):
     form = UserForm()
     if request.method == "POST":
         form = UserForm(request.POST)
         if form.is_valid():
-            form.save(commit=True)
+            user = form.save(commit=False)
+            raw_password = form.cleaned_data['password']
+            user.password = raw_password
+            user.save()
+            user = authenticate(username=user.username, password=raw_password)
+            if user is not None:
+                login(request, user)
             return redirect(reverse('planner:index'))
         else:
             print(form.errors)
-    return render(request, 'planner/register.html', {'form', form})
+    return render(request, 'planner/register.html', {'form': form})
 
 @login_required
-def logout(request):
-    pass
-
+def user_logout(request):
+    logout(request)
+    return redirect(reverse('index'))
 
 def view_event(request, event_slug):
     context_dict = {}
