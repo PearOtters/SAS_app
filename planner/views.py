@@ -19,29 +19,49 @@ def index(request):
 
 
 def user_login(request):
-    pass
+    # Check if user is already logged in
+    if request.user.is_authenticated:
+        return redirect('planner:index')
+    
+    if request.method == "POST":
+        # Use Django's built-in AuthenticationForm
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            
+            if user is not None:
+                auth_login(request, user)  # Log the user in
+                # Redirect to 'next' parameter if present, otherwise to 'index'
+                next_url = request.POST.get('next') or reverse('planner:index')
+                return redirect(next_url)
+    else:
+        form = AuthenticationForm()
+
+    # Pass the form to the template
+    return render(request, 'planner/login.html', {'form': form})
 
 def user_register(request):
-    form = UserForm()
     if request.method == "POST":
         form = UserForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            raw_password = form.cleaned_data['password']
-            user.password = raw_password
+            password = form.cleaned_data.get('password') 
+            user.set_password(password)
             user.save()
-            user = authenticate(username=user.username, password=raw_password)
-            if user is not None:
-                login(request, user)
+            
             return redirect(reverse('planner:index'))
         else:
             print(form.errors)
+    else:
+        form = UserForm()
     return render(request, 'planner/register.html', {'form': form})
 
 @login_required
 def user_logout(request):
-    logout(request)
-    return redirect(reverse('index'))
+    auth_logout(request)
+    return redirect(reverse('planner:index'))
 
 def view_event(request, event_slug):
     context_dict = {}
