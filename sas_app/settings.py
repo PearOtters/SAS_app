@@ -33,7 +33,7 @@ ALLOWED_HOSTS = []
 
 REGISTRATION_OPEN = True
 REGISTRATION_AUTO_LOGIN = True
-LOGIN_REDIRECT_URL = 'planner:<view-name>'
+LOGIN_REDIRECT_URL = 'planner:index'
 LOGIN_URL = 'planner:login'
 
 
