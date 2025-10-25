@@ -42,12 +42,12 @@ class Venue(models.Model):
     # This model is kept but is no longer related to Event/EventOccurrence.
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    kind = models.CharField(max_length=20, choices=Choices.get_activity_kind(), default=("OTHER", "Other"))
+    kind = models.CharField(max_length=20, choices=Choices.get_activity_kind(), default="OTHER")
     city = models.CharField(max_length=100, default="Glasgow")
     postcode = models.CharField(max_length=12, blank=True)
     eastings = models.IntegerField(blank=True, default=0, null=True)
     northings = models.IntegerField(blank=True, default=0, null=True)
-    
+    budget = models.CharField(max_length=10, choices=Choices.get_budget_band(), default="LOW")
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     
