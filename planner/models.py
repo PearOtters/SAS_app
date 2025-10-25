@@ -51,7 +51,7 @@ class Venue(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     best_days = MultiSelectField(choices=Choices.get_best_days(), max_length=20)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, blank=True)
 
     class Meta:
         indexes = [
@@ -106,7 +106,6 @@ class Event(models.Model):
 
     min_group_size = models.PositiveIntegerField(default=2)
     max_group_size = models.PositiveIntegerField(null=True, blank=True, help_text="Null = no hard limit")
-    booking_url = models.URLField(blank=True)
 
     tags = models.ManyToManyField(Tag, blank=True, related_name="events")
 

@@ -73,7 +73,7 @@ def view_event(request, event_slug):
         context_dict['event'] = event
     except Event.DoesNotExist:
         context_dict['event'] = None
-    return render(request, "planner/view_event", context=context_dict)
+    return render(request, "planner/view_event.html", context=context_dict)
 
-def view_venue(request, event_slug):
+def view_venue(request, venue_slug):
     pass
