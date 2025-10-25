@@ -84,16 +84,18 @@ def user_login(request):
     return render(request, 'planner/login.html', {'form': form})
 
 def user_register(request):
+    if request.user.is_authenticated:
+        return redirect('planner:dashboard')
+
     if request.method == "POST":
-        form = UserForm(request.POST)
+        form = UserForm(request.POST) 
         if form.is_valid():
-            user = form.save(commit=False)
-            password = form.cleaned_data.get('password') 
-            user.set_password(password)
-            user.save()
+            user = form.save() 
+            auth_login(request, user)
             return redirect(reverse('planner:dashboard'))
         else:
-            print(form.errors)
+            print(form.errors) 
+            pass 
     else:
         form = UserForm()
     return render(request, 'planner/register.html', {'form': form})

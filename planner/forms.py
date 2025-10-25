@@ -3,13 +3,58 @@ from django.contrib.auth.models import User
 
 from .models import Event, EventOccurrence, Venue, Choices 
 from django.core.validators import MinValueValidator
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import get_user_model
 
-class UserForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput())
+User = get_user_model()
+
+class UserForm(UserCreationForm):
+    """
+    A custom form for user registration that includes an email field
+    and custom validation for password confirmation.
+    """
+    email = forms.EmailField(
+        required=True, 
+        label="Email Address",
+        # Adding a placeholder to match the template's style
+        widget=forms.EmailInput(attrs={'placeholder': 'Email'})
+    )
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password',)
+        # The fields for the base UserCreationForm are 'password1' and 'password2'
+        fields = ("username", "email", "password1", "password2") # <-- CORRECTED
+        widgets = {
+            'username': forms.TextInput(attrs={'placeholder': 'Username'}),
+            'password1': forms.PasswordInput(attrs={'placeholder': 'Password'}), # Corrected widget key
+            'password2': forms.PasswordInput(attrs={'placeholder': 'Confirm Password'}),
+        }
+
+    def clean_email(self):
+        """
+        Ensure the email is unique, as UserCreationForm doesn't enforce this by default.
+        """
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("This email address is already in use.")
+        return email
+
+    def clean(self):
+        """
+        Custom validation to check if password and password2 match,
+        after base UserCreationForm validation has run.
+        """
+        cleaned_data = super().clean() 
+        
+        password = cleaned_data.get('password')
+        password2 = cleaned_data.get('password2')
+        if password and password2 and password != password2:
+            raise forms.ValidationError(
+                "The two password fields didn't match.",
+                code='password_mismatch'
+            )
+
+        return cleaned_data
 
 class EventCreationForm(forms.Form):
     """

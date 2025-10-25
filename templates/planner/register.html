@@ -214,10 +214,23 @@ color: #666;
     margin-bottom: 5px;
 }
 /* Ensure inputs with errors stand out */
-.form-group .errorlist + input {
+.form-group .errorlist + input,
+.form-group .errorlist + .password-wrapper input {
     border-color: #ff6b6b !important;
 }
 
+.non-field-errors {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.non-field-errors li {
+    color: #ff6b6b;
+    font-size: 14px;
+    font-weight: 500;
+}
 
 .password-wrapper {
 position: relative;
@@ -460,6 +473,14 @@ padding: 12px 20px;
 
 <form method="post" action="{% url 'planner:register' %}" id="signupForm">
     {% csrf_token %}
+    
+    {% if form.non_field_errors %}
+        <ul class="non-field-errors">
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 
     <div class="form-group">
         {{ form.username.errors }}
@@ -490,13 +511,13 @@ padding: 12px 20px;
     </div>
 
     <div class="form-group">
-        {{ form.password.errors }}
+        {{ form.password1.errors }}
         <div class="password-wrapper">
             <input
                 type="password"
                 class="form-input"
-                id="{{ form.password.id_for_label }}"
-                name="{{ form.password.name }}"
+                id="{{ form.password1.id_for_label }}"
+                name="{{ form.password1.name }}"
                 placeholder="Password"
                 required
                 aria-label="Password"
@@ -504,7 +525,7 @@ padding: 12px 20px;
             <button
                 type="button"
                 class="toggle-password"
-                onclick="togglePassword('{{ form.password.id_for_label }}')"
+                onclick="togglePassword('{{ form.password1.id_for_label }}')"
                 aria-label="Toggle password visibility"
             >
                 👁️
