@@ -29,7 +29,7 @@ def register(request):
             return redirect(reverse('planner:index'))
         else:
             print(form.errors)
-    return render(request, 'planner/register.html')
+    return render(request, 'planner/register.html', {'form', form})
 
 @login_required
 def logout(request):
