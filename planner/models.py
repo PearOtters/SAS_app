@@ -10,10 +10,21 @@ from multiselectfield import MultiSelectField
 from decimal import Decimal # Import Decimal for DecimalField
 
 class Choices:
-    def get_activity_kind():
-        return (('BAR', 'Bar / Pub'), ("TRIVIA", "Trivia / Pub Quiz"), ("KARAOKE", "Karaoke"), 
-                ("LIVE_MUSIC", "Live Music"), ("ACTIVITY", "Activity (pool, darts, bowling, etc.)"),
-                ("CLUB", "Club"),  ("FOOD", "Food / Restaurant"), ("OTHER", "Other"))
+    def get_event_kind():
+        return (
+            ('CONCERT', 'Concert / Gig'),
+            ('CONFERENCE', 'Conference'),
+            ('MEETING', 'Meeting'),
+            ('WORKSHOP', 'Workshop'),
+            ('SOCIAL', 'Social / Mixer'),
+            ('EXHIBITION', 'Exhibition / Art'),
+            ('THEATRE', 'Theatre / Play'),
+            ('COMEDY', 'Comedy Show'),
+            ('TOUR', 'Tour'),
+            ('FOOD', 'Food & Drink'),
+            ('CLUB', 'Club Night'),
+            ('OTHER', 'Other Event'),
+        )
     
     def get_budget_band():
         return (("LOW", "£"), ("MEDIUM", "££"), ("HIGH", "£££"))
@@ -42,7 +53,6 @@ class Venue(models.Model):
     # This model is kept but is no longer related to Event/EventOccurrence.
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    kind = models.CharField(max_length=20, choices=Choices.get_activity_kind(), default="OTHER")
     city = models.CharField(max_length=100, default="Glasgow")
     postcode = models.CharField(max_length=12, blank=True)
     eastings = models.IntegerField(blank=True, default=0, null=True)
@@ -62,7 +72,6 @@ class Venue(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["city", "is_active"]),
-            models.Index(fields=["kind"]),
             models.Index(fields=["name"]),
         ]
         ordering = ["name"]
@@ -124,6 +133,7 @@ class Event(models.Model):
     
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    kind = models.CharField(max_length=20, choices=Choices.get_event_kind(), default="OTHER")
     
     # NEW FIELDS: Location data is now stored directly on the Event
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
@@ -181,7 +191,7 @@ class Event(models.Model):
     @property
     def category(self):
         # Mock category since Venue Kind is gone. Defaults to 'other'.
-        return 'other'
+        return self.kind
 
 
 class EventOccurrence(models.Model):

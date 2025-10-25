@@ -184,6 +184,7 @@ def dashboard(request):
     # --- NEW: Get filter parameters from GET request ---
     search_name = request.GET.get('search_name')
     budget = request.GET.get('budget')
+    kind = request.GET.get('kind') # NEW: Get the 'kind' filter
     min_attendees_str = request.GET.get('min_attendees')
     
     # Start with the base queryset
@@ -193,28 +194,33 @@ def dashboard(request):
 
     # --- NEW: Apply Filters ---
 
-    # 1. Search by Name
+    # 1. Search by Name (Remains the same)
     if search_name:
         occurrences_queryset = occurrences_queryset.filter(
-            event__title__icontains=search_name # Case-insensitive partial match on Event title
+            event__title__icontains=search_name
         )
     
-    # 2. Filter by Budget
+    # 2. Filter by Budget (Remains the same)
     if budget and budget in [choice[0] for choice in Choices.get_budget_band()]:
         occurrences_queryset = occurrences_queryset.filter(
-            event__budget=budget # Match on Event budget field
+            event__budget=budget
+        )
+        
+    # 3. NEW: Filter by Kind
+    if kind and kind in [choice[0] for choice in Choices.get_event_kind()]:
+        occurrences_queryset = occurrences_queryset.filter(
+            event__kind=kind
         )
     
-    # 3. Filter by Minimum Attendees
+    # 4. Filter by Minimum Attendees (Remains the same)
     if min_attendees_str:
+        # ... (logic remains the same)
         try:
             min_attendees = int(min_attendees_str)
-            # Filter occurrences where actual attendees meet the minimum requested
             occurrences_queryset = occurrences_queryset.filter(
                 actual_attendees__gte=min_attendees
             )
         except ValueError:
-            # Handle invalid input (optional: add error message to context)
             pass
 
     # Update Query: use the filtered queryset
@@ -222,35 +228,50 @@ def dashboard(request):
 
     event_data_list = []
     
-    if not occurrences.exists() and not (search_name or budget or min_attendees_str): 
-        # Only inject mock data if NO filters are applied AND no real events exist
-        # If filters are applied and no results, we show an empty list which is correct.
+    # --- Mock Data Logic Update ---
+    if not occurrences.exists() and not (search_name or budget or kind or min_attendees_str): 
         print("Using mock event data for dashboard.")
         
-        # ... (rest of the mock data injection remains the same)
-        # Note: Mock data logic doesn't inherently support filtering without client-side JS
-        # filtering, but the server-side filtering is the priority for the database query.
+        # NOTE: MockEventOccurrence needs to be updated manually 
+        # to properly set category/kind for filtering testing
+        # Since MockEventOccurrence doesn't have budget defined, we'll manually set it for the mock
+        class MockEventInternal:
+            def __init__(self, title, description, category, lat, lng, location_name, budget='MEDIUM'): # ADDED BUDGET
+                self.title = title
+                self.description = description
+                self.category = category 
+                self.latitude = lat
+                self.longitude = lng
+                self.location_name = location_name
+                self.budget = budget # Use budget here
+                self.min_group_size = 1
+
+        class MockEventOccurrenceUpdated: # Updated Mock to support budget
+            def __init__(self, title, description, start_datetime, duration_hours, attendees, category, lat, lng, location_name, budget='MEDIUM'):
+                self.id = random.randint(100, 999) 
+                self.start_datetime = start_datetime
+                self.duration_hours = duration_hours
+                self.actual_attendees = attendees
+                self.event = MockEventInternal(title, description, category, lat, lng, location_name, budget)
 
         mock_occurrences = [
-            MockEventOccurrence(
+            MockEventOccurrenceUpdated( # UPDATED CALL
                 title="Tech Conference 2025", 
                 description="Annual technology conference.",
                 start_datetime=datetime.now().replace(day=15, hour=9, minute=0, second=0, microsecond=0) + timedelta(days=30),
-                duration_hours=Decimal(8), attendees=500, category='conference',
-                lat=55.8642, lng=-4.2518, location_name='Glasgow City Centre'
+                duration_hours=Decimal(8), attendees=500, category='Conference',
+                lat=55.8642, lng=-4.2518, location_name='Glasgow City Centre', budget='HIGH' # ADDED BUDGET
             ),
-            MockEventOccurrence(
+            MockEventOccurrenceUpdated( # UPDATED CALL
                 title="Design Workshop", 
                 description="Hands-on workshop.",
                 start_datetime=datetime.now().replace(day=18, hour=14, minute=0, second=0, microsecond=0) + timedelta(days=30),
-                duration_hours=Decimal(3), attendees=30, category='workshop',
-                lat=55.8700, lng=-4.2600, location_name='West End Community Hall'
+                duration_hours=Decimal(3), attendees=30, category='Workshop',
+                lat=55.8700, lng=-4.2600, location_name='West End Community Hall', budget='LOW' # ADDED BUDGET
             ),
         ]
         
-        # ... (rest of the mock data loop)
         for occurrence in mock_occurrences:
-            # ... (append to event_data_list)
             event_data_list.append({
                 'id': occurrence.id,
                 'name': occurrence.event.title,
@@ -259,6 +280,7 @@ def dashboard(request):
                 'duration': float(occurrence.duration_hours),
                 'category': occurrence.event.category,
                 'attendees': occurrence.actual_attendees,
+                'budget': occurrence.event.budget, # NEW: Include budget for mock data
                 'location': {
                     'lat': float(occurrence.event.latitude) if occurrence.event.latitude else 0.0,
                     'lng': float(occurrence.event.longitude) if occurrence.event.longitude else 0.0,
@@ -266,11 +288,9 @@ def dashboard(request):
                 }
             })
     
-    # If using REAL data, the events will be filtered by the queryset:
+    # --- Real Data Logic Update ---
     elif occurrences.exists():
-        # Format real database data for the front-end
         for occurrence in occurrences:
-            # ... (loop remains the same)
             event = occurrence.event
             event_data_list.append({
                 'id': occurrence.pk,
@@ -281,6 +301,7 @@ def dashboard(request):
                 'category': event.category, 
                 'attendees': occurrence.actual_attendees,
                 'description': event.description,
+                'budget': event.budget, # NEW: Include budget for real data
                 'location': {
                     'lat': float(event.latitude) if event.latitude else 0.0,
                     'lng': float(event.longitude) if event.longitude else 0.0,
@@ -290,8 +311,6 @@ def dashboard(request):
         
     context = {
         'events_json': json.dumps(event_data_list), 
-        # NEW: You might want to pass back the search/filter terms to pre-populate the form
-        # However, the HTML modification above already handles this using request.GET directly.
     }
     return render(request, 'planner/dashboard.html', context)
 

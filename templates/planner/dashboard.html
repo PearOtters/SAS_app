@@ -574,6 +574,26 @@
                 </div>
 
                 <div>
+                    <label for="kind" style="display: block; margin-bottom: 8px; font-weight: 600;">Event Type</label>
+                    <select id="kind" name="kind" 
+                            style="padding: 10px; border-radius: 4px; border: 1px solid rgba(0, 217, 255, 0.3); background: rgba(26, 26, 26, 0.8); color: #ffffff;">
+                        <option value="">All Types</option>
+                        <option value="CONCERT" {% if request.GET.kind == 'CONCERT' %}selected{% endif %}>Concert / Gig</option>
+                        <option value="CONFERENCE" {% if request.GET.kind == 'CONFERENCE' %}selected{% endif %}>Conference</option>
+                        <option value="MEETING" {% if request.GET.kind == 'MEETING' %}selected{% endif %}>Meeting</option>
+                        <option value="WORKSHOP" {% if request.GET.kind == 'WORKSHOP' %}selected{% endif %}>Workshop</option>
+                        <option value="SOCIAL" {% if request.GET.kind == 'SOCIAL' %}selected{% endif %}>Social / Mixer</option>
+                        <option value="EXHIBITION" {% if request.GET.kind == 'EXHIBITION' %}selected{% endif %}>Exhibition / Art</option>
+                        <option value="THEATRE" {% if request.GET.kind == 'THEATRE' %}selected{% endif %}>Theatre / Play</option>
+                        <option value="COMEDY" {% if request.GET.kind == 'COMEDY' %}selected{% endif %}>Comedy Show</option>
+                        <option value="TOUR" {% if request.GET.kind == 'TOUR' %}selected{% endif %}>Tour</option>
+                        <option value="FOOD" {% if request.GET.kind == 'FOOD' %}selected{% endif %}>Food & Drink</option>
+                        <option value="CLUB" {% if request.GET.kind == 'CLUB' %}selected{% endif %}>Club Night</option>
+                        <option value="OTHER" {% if request.GET.kind == 'OTHER' %}selected{% endif %}>Other Event</option>
+                    </select>
+                </div>
+
+                <div>
                     <label for="min_attendees" style="display: block; margin-bottom: 8px; font-weight: 600;">Min. Attendees</label>
                     <input type="number" id="min_attendees" name="min_attendees" 
                            value="{{ request.GET.min_attendees }}" min="1" 
@@ -767,48 +787,119 @@
             }
 
             eventList.innerHTML = events.map(event => {
-                const dateStr = event.date instanceof Date && !isNaN(event.date)
-                    ? event.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                    : 'N/A';
-                const isSelected = selectedEventId === event.id;
+            const dateStr = event.date instanceof Date && !isNaN(event.date)
+                ? event.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'N/A';
+            const isSelected = selectedEventId === event.id;
+            
+            // Helper function to convert budget code to symbols
+            const getBudgetSymbol = (budgetCode) => {
+                if (budgetCode === 'LOW') return '£';
+                if (budgetCode === 'MEDIUM') return '££';
+                if (budgetCode === 'HIGH') return '£££';
+                return '-';
+            };
 
-                return `
-                    <div class="event-item ${isSelected ? 'selected' : ''}" onclick="selectEvent(${event.id})">
-                        <div class="event-item-header">
-                            <div>
-                                <div class="event-item-title">${event.name}</div>
-                            </div>
-                            <span class="event-item-category">${event.category}</span>
+            const budgetSymbol = getBudgetSymbol(event.budget); // NEW: Get budget symbol
+
+            return `
+                <div class="event-item ${isSelected ? 'selected' : ''}" onclick="selectEvent(${event.id})">
+                    <div class="event-item-header">
+                        <div>
+                            <div class="event-item-title">${event.name}</div>
                         </div>
-                        <div class="event-item-details">
-                            <div class="event-item-detail">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                </svg>
-                                <span>${dateStr} at ${event.time}</span>
-                            </div>
-                            <div class="event-item-detail">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                </svg>
-                                <span>${event.location.address}</span>
-                            </div>
-                            <div class="event-item-detail">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                </svg>
-                                <span>${event.attendees} attendees</span>
-                            </div>
-                        </div>
-                        <div class="event-item-description">${event.description}</div>
+                        <span class="event-item-category">${event.category}</span>
                     </div>
-                `;
-            }).join('');
+                    <div class="event-item-details">
+                        <div class="event-item-detail">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span>${dateStr} at ${event.time}</span>
+                        </div>
+                        <div class="event-item-detail">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            </svg>
+                            <span>${event.location.address}</span>
+                        </div>
+                        <div class="event-item-detail">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c1.657 0 3 .895 3 2s-1.343 2-3 2-3-.895-3-2 1.343-2 3-2zM12 8V4m-4 8h8m-8 4h8"></path>
+                            </svg>
+                            <span>Price/Budget: ${budgetSymbol}</span> </div>
+                        <div class="event-item-detail">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            <span>${event.attendees} attendees</span>
+                        </div>
+                    </div>
+                    <div class="event-item-description">${event.description}</div>
+                </div>
+            `;
+        }).join('');
 
             if (events.length > 0 && selectedEventId === null) {
                 selectEvent(events[0].id); // Select the first event by default
             } else if (events.length === 0) {
                 updateEventDisplay(null);
+            }
+        }
+
+        function updateEventDisplay(event) {
+            const getBudgetSymbol = (budgetCode) => {
+                if (budgetCode === 'LOW') return '£';
+                if (budgetCode === 'MEDIUM') return '££';
+                if (budgetCode === 'HIGH') return '£££';
+                return 'N/A';
+            };
+
+            if (event) {
+                document.getElementById('dispName').textContent = event.name || 'N/A';
+                document.getElementById('dispDateTime').textContent = `${formatDate(event.date)} at ${event.time || 'N/A'}`;
+                document.getElementById('dispLocation').textContent = event.location.address || 'N/A';
+                document.getElementById('dispCategory').textContent = event.category || 'N/A';
+                document.getElementById('dispDuration').textContent = formatDuration(event.duration);
+                document.getElementById('dispAttendees').textContent = event.attendees ? `${event.attendees}` : 'N/A';
+                document.getElementById('dispDescription').textContent = event.description || 'No description provided.';
+
+                // NEW: Add Budget/Price to the details card.
+                // We'll insert it into a new, fifth display group.
+
+                // Find the event details grid and insert a new budget element
+                const displayGrid = document.getElementById('eventDisplay').querySelector('.display-grid');
+                let budgetGroup = document.getElementById('dispBudgetGroup');
+                
+                if (!budgetGroup) {
+                    budgetGroup = document.createElement('div');
+                    budgetGroup.id = 'dispBudgetGroup';
+                    budgetGroup.className = 'display-group';
+                    budgetGroup.innerHTML = `
+                        <div class="display-label">Price / Budget</div>
+                        <div class="display-value" id="dispBudget">${getBudgetSymbol(event.budget)}</div>
+                    `;
+                    // Insert it before the last full-width description group
+                    const lastFullWidthGroup = displayGrid.querySelector('.display-group.full-width:last-child');
+                    if (lastFullWidthGroup) {
+                        displayGrid.insertBefore(budgetGroup, lastFullWidthGroup);
+                    } else {
+                        displayGrid.appendChild(budgetGroup);
+                    }
+                } else {
+                    document.getElementById('dispBudget').textContent = getBudgetSymbol(event.budget);
+                }
+
+            } else {
+                // ... (existing else block, ensure budget group is cleared if needed, 
+                // but resetting to default values is usually sufficient)
+                document.getElementById('dispName').textContent = 'Select an event from the list or map.';
+                // ... (rest of else block)
+                let budgetGroup = document.getElementById('dispBudgetGroup');
+                if (budgetGroup) {
+                    // Remove the budget group for a clean reset, or set to '-'
+                    document.getElementById('dispBudget').textContent = '-'; 
+                }
             }
         }
 
