@@ -548,6 +548,45 @@
             </div>
             </div>
 
+        <div class="dashboard-header">
+            ... </div>
+
+        <div class="dashboard-controls" style="margin-bottom: 32px; padding: 20px; background: rgba(0, 217, 255, 0.05); border-radius: 8px;">
+            <form id="filterForm" method="GET" action="{% url 'planner:dashboard' %}" style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end;">
+                
+                <div style="flex-grow: 1; min-width: 200px;">
+                    <label for="search_name" style="display: block; margin-bottom: 8px; font-weight: 600;">Search Event Name</label>
+                    <input type="text" id="search_name" name="search_name" 
+                           value="{{ request.GET.search_name }}" 
+                           placeholder="e.g. Workshop, Social Mixer" 
+                           style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid rgba(0, 217, 255, 0.3); background: rgba(26, 26, 26, 0.8); color: #ffffff;">
+                </div>
+
+                <div>
+                    <label for="budget" style="display: block; margin-bottom: 8px; font-weight: 600;">Cost / Budget</label>
+                    <select id="budget" name="budget" 
+                            style="padding: 10px; border-radius: 4px; border: 1px solid rgba(0, 217, 255, 0.3); background: rgba(26, 26, 26, 0.8); color: #ffffff;">
+                        <option value="">All Budgets</option>
+                        <option value="LOW" {% if request.GET.budget == 'LOW' %}selected{% endif %}>Low (£)</option>
+                        <option value="MEDIUM" {% if request.GET.budget == 'MEDIUM' %}selected{% endif %}>Medium (££)</option>
+                        <option value="HIGH" {% if request.GET.budget == 'HIGH' %}selected{% endif %}>High (£££)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="min_attendees" style="display: block; margin-bottom: 8px; font-weight: 600;">Min. Attendees</label>
+                    <input type="number" id="min_attendees" name="min_attendees" 
+                           value="{{ request.GET.min_attendees }}" min="1" 
+                           placeholder="e.g. 10" 
+                           style="padding: 10px; border-radius: 4px; border: 1px solid rgba(0, 217, 255, 0.3); background: rgba(26, 26, 26, 0.8); color: #ffffff; width: 120px;">
+                </div>
+
+                <button type="submit" class="btn-create-event" style="padding: 10px 20px; font-size: 1rem; margin-top: 0; box-shadow: none;">
+                    Filter Events
+                </button>
+            </form>
+        </div>
+
         <div class="dashboard-grid with-list">
             <div class="card event-list-card">
                 <div class="card-header">
