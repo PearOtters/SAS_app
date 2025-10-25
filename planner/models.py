@@ -7,6 +7,7 @@ from urllib.parse import quote
 from urllib.request import urlopen
 import json
 from multiselectfield import MultiSelectField
+from decimal import Decimal # Import Decimal for DecimalField
 
 class Choices:
     def get_activity_kind():
@@ -38,13 +39,18 @@ class Tag(models.Model):
 
 
 class Venue(models.Model):
+    # This model is kept but is no longer related to Event/EventOccurrence.
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     kind = models.CharField(max_length=20, choices=Choices.get_activity_kind(), default=("OTHER", "Other"))
     city = models.CharField(max_length=100, default="Glasgow")
     postcode = models.CharField(max_length=12, blank=True)
-    eastings = models.IntegerField(blank=True, default=0)
-    northings = models.IntegerField(blank=True, default=0)
+    eastings = models.IntegerField(blank=True, default=0, null=True)
+    northings = models.IntegerField(blank=True, default=0, null=True)
+    
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    
     website = models.URLField(blank=True)
     phone = models.CharField(max_length=30, blank=True)
     tags = models.ManyToManyField(Tag, blank=True, related_name="venues")
@@ -65,12 +71,18 @@ class Venue(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.generate_unique_slug()
+            
+        needs_geocoding = False
         if self.pk:
             old = Venue.objects.get(pk=self.pk)
-            if old.postcode != self.postcode:
-                self.eastings, self.northings = self.get_coordinates(self.postcode)
-        else:
-            self.eastings, self.northings = self.get_coordinates(self.postcode)
+            if old.postcode != self.postcode or (self.latitude is None or self.longitude is None):
+                needs_geocoding = True
+        elif self.postcode:
+            needs_geocoding = True
+            
+        if needs_geocoding:
+            self.eastings, self.northings, self.latitude, self.longitude = self.get_coordinates(self.postcode)
+            
         super().save(*args, **kwargs)
 
     def generate_unique_slug(self):
@@ -81,26 +93,42 @@ class Venue(models.Model):
                 return random_slug
 
     def get_coordinates(self, postcode):
+        default_coords = (None, None, None, None) 
+        if not postcode:
+            return default_coords
+            
         try:
-            postcode = quote(postcode)
-            url = f"https://api.postcodes.io/postcodes/{postcode}"
-            print(postcode)
+            postcode_encoded = quote(postcode)
+            url = f"https://api.postcodes.io/postcodes/{postcode_encoded}"
+            
             with urlopen(url) as response:
                 data = json.load(response)
+                
             result = data.get('result')
             if result:
-                return result['eastings'], result['northings']
-        except:
+                return (result.get('eastings'), 
+                        result.get('northings'), 
+                        Decimal(str(result.get('latitude'))), 
+                        Decimal(str(result.get('longitude'))))
+                        
+        except Exception:
             pass
-        return None, None
+            
+        return default_coords
 
     def __str__(self):
         return self.name
 
 class Event(models.Model):
-    venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name="events")
+    # REMOVED: venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name="events")
+    
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    
+    # NEW FIELDS: Location data is now stored directly on the Event
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    location_name = models.CharField(max_length=255, blank=True, help_text="A descriptive name or address for the location.")
 
     budget = models.CharField(max_length=10, choices=Choices.get_budget_band(), default=("MEDIUM", "££"))
 
@@ -121,13 +149,12 @@ class Event(models.Model):
         ordering = ["title"]
 
     def __str__(self):
-        return f"{self.title} @ {self.venue.name}"
+        # Updated string representation to use the location_name field
+        return f"{self.title} @ {self.location_name or 'Unknown Location'}"
 
     @property
     def is_upcoming(self) -> bool:
-        if not self.start:
-            return False
-        return self.start >= timezone.now()
+        return self.occurrences.filter(start_datetime__gte=timezone.now()).exists()
 
     def fits_group(self, size: int) -> bool:
         if size < self.min_group_size:
@@ -148,5 +175,31 @@ class Event(models.Model):
         alphabet = string.ascii_letters + string.digits
         while True:
             random_slug = ''.join(secrets.choice(alphabet) for i in range(16))
-            if not Venue.objects.filter(slug=random_slug).exists():
+            if not Event.objects.filter(slug=random_slug).exists():
                 return random_slug
+
+    @property
+    def category(self):
+        # Mock category since Venue Kind is gone. Defaults to 'other'.
+        return 'other'
+
+
+class EventOccurrence(models.Model):
+    """Specific date, time, and attendee count for an Event."""
+    # The event FK remains, pointing to the updated Event model.
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="occurrences")
+    start_datetime = models.DateTimeField()
+    duration_hours = models.DecimalField(max_digits=4, decimal_places=2, default=2.0)
+    actual_attendees = models.PositiveIntegerField(default=0, help_text="Actual number of attendees.")
+
+    class Meta:
+        ordering = ["start_datetime"]
+        unique_together = [("event", "start_datetime")]
+
+    def __str__(self):
+        return f"{self.event.title} on {self.start_datetime.strftime('%Y-%m-%d %H:%M')}"
+
+    @property
+    def end_datetime(self):
+        from datetime import timedelta
+        return self.start_datetime + timedelta(hours=float(self.duration_hours))

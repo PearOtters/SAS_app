@@ -1,332 +1,932 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Planner Dashboard | Glasgow Map</title>
-<!-- Load Leaflet CSS and JS via CDN -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/SVRMgfkzGOVNAK3ZA="
-     crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-     integrity="sha256-20n6a9Kx6I3w1Ch7I5sB54mG+LzR4zK8X8yU6E/Kz5z="
-     crossorigin=""></script>
-     
-<style>
-/* --- BASE STYLES (Consistency with other templates) --- */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background-color: #1a1a1a;
-    color: #ffffff;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d1b3d 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-.page-container {
-    width: 100%;
-    max-width: 1400px;
-    border: 3px solid #00bcd4;
-    border-radius: 8px;
-    padding: 40px;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-    z-index: 1;
-}
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            border: 2px solid #00d9ff;
+            border-radius: 12px;
+            padding: 32px;
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(10px);
+        }
 
-/* Background Blobs */
-.gradient-orb-1 {
-    position: absolute;
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(circle, rgba(79, 70, 229, 0.3) 0%, rgba(79, 70, 229, 0) 70%);
-    border-radius: 50%;
-    top: -150px;
-    right: -100px;
-    filter: blur(80px);
-    z-index: 0;
-}
+        /* Added header with prominent Create Events button */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
 
-.gradient-orb-2 {
-    position: absolute;
-    width: 450px;
-    height: 450px;
-    background: radial-gradient(circle, rgba(147, 51, 234, 0.3) 0%, rgba(147, 51, 234, 0) 70%);
-    border-radius: 50%;
-    bottom: -100px;
-    left: -100px;
-    filter: blur(80px);
-    z-index: 0;
-}
+        .dashboard-header-content h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #00d9ff;
+            margin-bottom: 8px;
+        }
 
-/* --- MAP & DASHBOARD STYLES --- */
+        .dashboard-header-content p {
+            color: #a0a0a0;
+            font-size: 1.1rem;
+        }
 
-.dashboard-header {
-    background: rgba(30, 30, 30, 0.8);
-    padding: 25px 40px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-}
+        /* NEW STYLES for User Info and Logout */
+        .user-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
 
-.welcome-text {
-    font-size: 36px;
-    font-weight: 700;
-    color: #8b5cf6;
-}
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            color: #a0a0a0;
+            font-size: 0.9rem;
+        }
 
-.auth-links a {
-    text-decoration: none;
-    color: #ffffff;
-    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-weight: 600;
-    margin-left: 10px;
-    transition: all 0.3s ease;
-}
+        .user-info strong {
+            color: #ffffff;
+            font-size: 1rem;
+            margin-bottom: 2px;
+        }
 
-.logout-button {
-    text-decoration: none;
-    color: #a0a0a0;
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-weight: 500;
-    margin-left: 10px;
-    transition: all 0.3s ease;
-}
+        .btn-logout {
+            padding: 8px 16px;
+            background: none;
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-.logout-button:hover {
-    color: #ffffff;
-    border-color: #7dd3fc;
-}
+        .btn-logout:hover {
+            background: rgba(255, 107, 107, 0.1);
+            color: #ffffff;
+            border-color: #ffffff;
+        }
+        /* END NEW STYLES */
 
-.content-title {
-    font-size: 28px;
-    color: #7dd3fc;
-    margin-bottom: 15px;
-    border-left: 5px solid #7dd3fc;
-    padding-left: 15px;
-}
+        .btn-create-event {
+            padding: 16px 40px;
+            background: linear-gradient(135deg, #7c3aed 0%, #00d9ff 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+        }
 
-/* Map Container */
-#mapid {
-    height: 600px; /* Set a fixed height for the map */
-    width: 100%;
-    border-radius: 12px;
-    border: 3px solid #6366f1; /* Neon border for the map */
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.5); /* Neon glow effect */
-    transition: all 0.5s ease;
-}
+        .btn-create-event:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(124, 58, 237, 0.5);
+        }
 
-/* Custom Marker Styling (Neon Pinpoint) */
-.leaflet-marker-icon.neon-pin {
-    filter: drop-shadow(0 0 5px #8b5cf6) drop-shadow(0 0 10px #6366f1);
-    /* Basic animation */
-    animation: pulse 1.5s infinite alternate;
-}
+        .btn-create-event svg {
+            width: 24px;
+            height: 24px;
+        }
 
-@keyframes pulse {
-    0% { transform: scale(1); }
-    100% { transform: scale(1.1); }
-}
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
 
-/* Leaflet Popup Styling for Dark Theme */
-.leaflet-popup-content-wrapper, .leaflet-popup-tip {
-    background: #1a1a1a !important;
-    color: #ffffff !important;
-    border-radius: 8px !important;
-}
-.leaflet-popup-content-wrapper a {
-    color: #7dd3fc !important;
-    font-weight: bold;
-    text-decoration: none;
-}
-.leaflet-popup-content {
-    font-size: 16px;
-}
+        .dashboard-grid.with-list {
+            grid-template-columns: 1fr 1fr;
+        }
 
-/* Responsive Adjustments */
-@media (max-width: 900px) {
-    #mapid {
-        height: 450px;
-    }
-}
+        .event-list-card {
+            grid-row: 1 / 3;
+        }
 
-@media (max-width: 640px) {
-    .page-container {
-        padding: 20px;
-    }
-    .dashboard-header {
-        flex-direction: column;
-        align-items: stretch;
-        padding: 20px;
-    }
-    .welcome-text {
-        font-size: 28px;
-        text-align: center;
-    }
-    .auth-links {
-        display: flex;
-        justify-content: center;
-        margin-top: 15px;
-    }
-    .auth-links a {
-        margin: 0 5px;
-    }
-    .content-title {
-        font-size: 24px;
-    }
-}
-</style>
+        @media (max-width: 1024px) {
+            .dashboard-grid.with-list {
+                grid-template-columns: 1fr;
+            }
+
+            .event-list-card {
+                grid-row: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+            }
+
+            .dashboard-header-content {
+                width: 100%;
+            }
+
+            .user-controls {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .dashboard-header-content h1 {
+                font-size: 2rem;
+            }
+
+            .btn-create-event {
+                width: 100%;
+                order: 3;
+                justify-content: center;
+                margin-top: 10px;
+            }
+
+            .user-info {
+                align-items: flex-start;
+            }
+        }
+
+        .card {
+            background: rgba(45, 27, 61, 0.4);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: #00d9ff;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+        }
+
+        .card-icon {
+            width: 32px;
+            height: 32px;
+            color: #00d9ff;
+        }
+
+        .card-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .calendar-container {
+            width: 100%;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-header h3 {
+            font-size: 1.2rem;
+            color: #00d9ff;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 12px;
+        }
+
+        .calendar-nav button {
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid #00d9ff;
+            color: #00d9ff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-nav button:hover {
+            background: rgba(0, 217, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            padding: 12px 8px;
+            font-weight: 600;
+            color: #00d9ff;
+            font-size: 0.85rem;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .calendar-day:hover {
+            background: rgba(0, 217, 255, 0.1);
+            border-color: #00d9ff;
+            transform: scale(1.05);
+        }
+
+        .calendar-day.selected {
+            background: linear-gradient(135deg, #7c3aed 0%, #00d9ff 100%);
+            border-color: #00d9ff;
+            font-weight: 700;
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.3;
+            cursor: default;
+        }
+
+        .calendar-day.other-month:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+            transform: none;
+        }
+
+        .calendar-day.has-event {
+            position: relative;
+        }
+
+        .calendar-day.has-event::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background: #00d9ff;
+            border-radius: 50%;
+        }
+
+        .calendar-day.has-event:hover::after {
+            background: #7c3aed;
+        }
+
+        .map-container {
+            width: 100%;
+            height: 400px;
+            background: #1a1a1a;
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .map-info {
+            margin-top: 16px;
+            padding: 12px;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #00d9ff;
+        }
+
+        .event-list-container {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .event-list-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .event-list-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .event-list-container::-webkit-scrollbar-thumb {
+            background: rgba(0, 217, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .event-list-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 217, 255, 0.5);
+        }
+
+        .event-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .event-item:hover {
+            background: rgba(0, 217, 255, 0.1);
+            border-color: #00d9ff;
+            transform: translateX(4px);
+        }
+
+        .event-item.selected {
+            background: rgba(124, 58, 237, 0.2);
+            border-color: #7c3aed;
+        }
+
+        .event-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .event-item-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .event-item-category {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(0, 217, 255, 0.2);
+            border: 1px solid #00d9ff;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: #00d9ff;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .event-item-details {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            color: #a0a0a0;
+            font-size: 0.9rem;
+        }
+
+        .event-item-detail {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .event-item-detail svg {
+            width: 16px;
+            height: 16px;
+            color: #00d9ff;
+        }
+
+        .event-item-description {
+            margin-top: 8px;
+            color: #cccccc;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .no-events {
+            text-align: center;
+            padding: 40px 20px;
+            color: #a0a0a0;
+        }
+
+        .no-events svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+        
+        /* Styles for the Read-Only Event Details Display */
+        .event-display-container {
+            margin-top: 24px;
+        }
+        
+        .display-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 columns for details */
+            gap: 20px;
+        }
+        
+        @media (max-width: 900px) {
+             .display-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 600px) {
+             .display-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .display-group {
+            padding: 12px;
+            border-radius: 6px;
+            background: rgba(0, 217, 255, 0.05);
+            border: 1px solid rgba(0, 217, 255, 0.1);
+        }
+
+        .display-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .display-label {
+            margin-bottom: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #a0a0a0;
+            text-transform: uppercase;
+        }
+
+        .display-value {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #ffffff;
+            word-wrap: break-word;
+        }
+        
+        .display-description {
+            white-space: pre-wrap;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+    </style>
 </head>
 <body>
-<div class="gradient-orb-1"></div>
-<div class="gradient-orb-2"></div>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <div class="dashboard-header-content">
+                <h1>Events Dashboard</h1>
+                <p>Browse and manage your events across calendar and map views</p>
+            </div>
+            
+            <div class="user-controls">
+                {% if user.is_authenticated %}
+                <div class="user-info">
+                    <strong>Hello, {{ user.username }}</strong>
+                    <span>Ready to plan?</span>
+                </div>
+                <a href="{% url 'planner:logout' %}" class="btn-logout">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    Logout
+                </a>
+                {% endif %}
+                <a href="{% url 'planner:create_event' %}" class="btn-create-event">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Create Event
+                </a>
+            </div>
+            </div>
 
-<div class="page-container">
-    <div class="dashboard-header">
-        <div class="welcome-text">
-            Hello, {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}!
+        <div class="dashboard-grid with-list">
+            <div class="card event-list-card">
+                <div class="card-header">
+                    <svg class="card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                    </svg>
+                    <h2>Available Events</h2>
+                </div>
+                <div class="event-list-container" id="eventList">
+                    </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <svg class="card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <h2>Calendar View</h2>
+                </div>
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <h3 id="currentMonth">January 2025</h3>
+                        <div class="calendar-nav">
+                            <button onclick="previousMonth()">Previous</button>
+                            <button onclick="nextMonth()">Next</button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid" id="calendar"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <svg class="card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <h2>Event Locations</h2>
+                </div>
+                <div class="map-container">
+                    <div id="map"></div>
+                </div>
+                <div class="map-info" id="mapInfo">
+                    Click on a marker to view event details
+                </div>
+            </div>
         </div>
-        <div class="auth-links">
-            <!-- Link directly to logout -->
-            <a href="{% url 'planner:logout' %}" class="logout-button">Logout</a>
+
+        <div class="card event-display-container">
+            <div class="card-header">
+                <svg class="card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <h2>Selected Event Details</h2>
+            </div>
+
+            <div id="eventDisplay">
+                <div class="display-grid">
+                    <div class="display-group full-width">
+                        <div class="display-label">Event Name</div>
+                        <div class="display-value" id="dispName">Select an event from the list or map.</div>
+                    </div>
+                    
+                    <div class="display-group">
+                        <div class="display-label">Date & Time</div>
+                        <div class="display-value" id="dispDateTime">-</div>
+                    </div>
+
+                    <div class="display-group">
+                        <div class="display-label">Location</div>
+                        <div class="display-value" id="dispLocation">-</div>
+                    </div>
+
+                    <div class="display-group">
+                        <div class="display-label">Category</div>
+                        <div class="display-value" id="dispCategory">-</div>
+                    </div>
+
+                    <div class="display-group">
+                        <div class="display-label">Duration</div>
+                        <div class="display-value" id="dispDuration">-</div>
+                    </div>
+
+                    <div class="display-group">
+                        <div class="display-label">Attendees</div>
+                        <div class="display-value" id="dispAttendees">-</div>
+                    </div>
+
+                    <div class="display-group full-width">
+                        <div class="display-label">Description</div>
+                        <div class="display-value display-description" id="dispDescription">...</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <h2 class="content-title">Public Events Map (Glasgow)</h2>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // ---------------------------------------------------------------------
+        // 1. DJANGO IMPLEMENTATION: Replace hardcoded data with context variable
+        // ---------------------------------------------------------------------
+        const eventsDataJson = "{{ events_json|safe|escapejs }}";
 
-    <!-- Map Container -->
-    <div id="mapid"></div>
+        // Hardcoded dummy data for demonstration since Django context is not available here
+        let rawEvents = [
+            { id: 1, name: "Tech Conference 2025", category: "CONFERENCE", date_ms: 1763116800000, time: "09:00", attendees: 500, description: "Annual technology conference featuring the latest innovations in AI and web development.", duration: 8, location: { address: "Glasgow City Centre", lat: 55.8624, lng: -4.2464 } },
+            { id: 2, name: "Quarterly Marketing Review", category: "MEETING", date_ms: 1761907200000, time: "14:30", attendees: 15, description: "Review Q4 performance and plan Q1 strategy.", duration: 1.5, location: { address: "Finnieston Office", lat: 55.8610, lng: -4.2863 } },
+            { id: 3, name: "Team Social Mixer", category: "SOCIAL", date_ms: 1762512000000, time: "18:00", attendees: 45, description: "Networking event for all staff. Drinks and appetizers provided.", duration: 3, location: { address: "West End Bar & Grill", lat: 55.8770, lng: -4.3010 } }
+        ];
 
-    <!-- Hidden Data Attribute for JS to read Events (Mocking Lat/Lon) -->
-    <!-- The JSON is generated tightly inline to reduce the chance of whitespace errors. -->
-    <div id="event-data" data-events='[
-    {% for event in events %}{
-        "title": "{{ event.title|escapejs }}",
-        "slug": "{{ event.slug|escapejs }}",
-        "venue": "{{ event.venue.name|escapejs }}",
-        "lat": {{ 55.8642|add:forloop.counter|div:10000.0 }},
-        "lng": {{ -4.2518|add:forloop.counter|div:10000.0|sub:forloop.counter0|div:20000.0 }}
-    }{% if not forloop.last %},{% endif %}{% endfor %}
-    ]'></div>
-
-
-</div>
-
-<script>
-    // --- MAP INITIALIZATION ---
-    document.addEventListener('DOMContentLoaded', function () {
-        const eventsDataElement = document.getElementById('event-data');
-        if (!eventsDataElement) return;
-
-        let events;
         try {
-            // FIX: Use a regex to safely clean whitespace before attempting to parse.
-            // This is the most robust way to handle template generated JSON in a data attribute.
-            const rawData = eventsDataElement.dataset.events.replace(/\s+/g, ' ').trim();
-            
-            // Check if the result is just '[]' or an empty string, and handle it safely
-            events = JSON.parse(rawData.length > 2 ? rawData : '[]');
+            if (eventsDataJson && eventsDataJson.trim() !== '') {
+                rawEvents = JSON.parse(eventsDataJson);
+            }
         } catch (e) {
-            // If parsing fails, log the error and stop execution.
-            console.error("Failed to parse event data. Raw content was: ", eventsDataElement.dataset.events, "Error:", e);
-            
-            // Fallback: Display simple message if map fails to load.
-            const mapContainer = document.getElementById('mapid');
-            if (mapContainer) {
-                mapContainer.innerHTML = '<div style="color: #ff6b6b; padding: 20px; text-align: center;">Error loading event data. Check server logs for malformed JSON.</div>';
-                mapContainer.style.border = '2px dashed #ff6b6b';
+            console.error("Error parsing events_json from Django context:", e);
+        }
+
+        // Final events list with JavaScript Date objects
+        const events = rawEvents.map(event => ({
+            ...event,
+            // Convert timestamp (milliseconds since epoch) back to a Date object
+            date: new Date(event.date_ms)
+        }));
+        // ---------------------------------------------------------------------
+
+        let currentDate = new Date();
+        let selectedEventId = null;
+        let map = null;
+        let markers = {};
+
+        // --- Utility Functions ---
+
+        function formatDate(date) {
+            return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        }
+
+        function formatDuration(duration) {
+              return duration ? `${duration} hour${duration > 1 ? 's' : ''}` : 'N/A';
+        }
+
+        function updateEventDisplay(event) {
+            if (event) {
+                document.getElementById('dispName').textContent = event.name || 'N/A';
+                document.getElementById('dispDateTime').textContent = `${formatDate(event.date)} at ${event.time || 'N/A'}`;
+                document.getElementById('dispLocation').textContent = event.location.address || 'N/A';
+                document.getElementById('dispCategory').textContent = event.category || 'N/A';
+                document.getElementById('dispDuration').textContent = formatDuration(event.duration);
+                document.getElementById('dispAttendees').textContent = event.attendees ? `${event.attendees}` : 'N/A';
+                document.getElementById('dispDescription').textContent = event.description || 'No description provided.';
+            } else {
+                document.getElementById('dispName').textContent = 'Select an event from the list or map.';
+                document.getElementById('dispDateTime').textContent = '-';
+                document.getElementById('dispLocation').textContent = '-';
+                document.getElementById('dispCategory').textContent = '-';
+                document.getElementById('dispDuration').textContent = '-';
+                document.getElementById('dispAttendees').textContent = '-';
+                document.getElementById('dispDescription').textContent = '...';
             }
-            return; 
-        }
-        
-        // Check if Leaflet is properly loaded before proceeding
-        if (typeof L === 'undefined' || typeof L.map !== 'function') {
-             console.error("Leaflet library (L) is not loaded correctly. Check CDN link.");
-             return;
         }
 
-        // Default Glasgow Coordinates
-        const glasgowCoords = [55.8642, -4.2518]; 
-        
-        // Initialize the map
-        const map = L.map('mapid', { 
-            center: glasgowCoords, 
-            zoom: 13,
-            zoomControl: false 
-        });
+        // --- Main Logic Functions ---
 
-        // Add a dark basemap tile layer (CartoDB Dark Matter is a good fit for neon theme)
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 19
-        }).addTo(map);
+        function renderEventList() {
+            const eventList = document.getElementById('eventList');
 
-        // Define a custom icon (using default marker path for simplicity, relying on CSS for neon effect)
-        const NeonIcon = L.Icon.Default.extend({
-            options: {
-                className: 'neon-pin' 
+            if (events.length === 0) {
+                eventList.innerHTML = `
+                    <div class="no-events">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 00-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                        </svg>
+                        <p>No events available</p>
+                    </div>
+                `;
+                return;
             }
-        });
-        const neonIcon = new NeonIcon();
 
+            eventList.innerHTML = events.map(event => {
+                const dateStr = event.date instanceof Date && !isNaN(event.date)
+                    ? event.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : 'N/A';
+                const isSelected = selectedEventId === event.id;
 
-        // --- PLOT EVENTS ---
-        const validEvents = events.filter(event => event.lat && event.lng);
+                return `
+                    <div class="event-item ${isSelected ? 'selected' : ''}" onclick="selectEvent(${event.id})">
+                        <div class="event-item-header">
+                            <div>
+                                <div class="event-item-title">${event.name}</div>
+                            </div>
+                            <span class="event-item-category">${event.category}</span>
+                        </div>
+                        <div class="event-item-details">
+                            <div class="event-item-detail">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <span>${dateStr} at ${event.time}</span>
+                            </div>
+                            <div class="event-item-detail">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                </svg>
+                                <span>${event.location.address}</span>
+                            </div>
+                            <div class="event-item-detail">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                <span>${event.attendees} attendees</span>
+                            </div>
+                        </div>
+                        <div class="event-item-description">${event.description}</div>
+                    </div>
+                `;
+            }).join('');
 
-        validEvents.forEach(event => {
-            const marker = L.marker([event.lat, event.lng], { icon: neonIcon }).addTo(map);
-
-            // Create a beautiful popup with a link
-            const popupContent = `
-                <div style="font-weight: 700; color: #8b5cf6; margin-bottom: 5px;">${event.title}</div>
-                <div>@ ${event.venue}</div>
-                <div style="margin-top: 10px;">
-                    <a href="{% url 'planner:view_event' event_slug='DUMMY_SLUG' %}".replace('DUMMY_SLUG', event.slug)">View Details →</a>
-                </div>
-            `;
-            
-            marker.bindPopup(popupContent, {
-                closeButton: false,
-                offset: [0, -10]
-            });
-            
-            // Optional: Make marker pulsate on mouseover
-            marker.on('mouseover', function (e) {
-                this.openPopup();
-                this.getElement().style.animationDuration = '0.5s'; 
-            });
-            marker.on('mouseout', function (e) {
-                this.closePopup();
-                this.getElement().style.animationDuration = '1.5s'; 
-            });
-        });
-        
-        // Optional: Fit map view to markers if events exist
-        if (validEvents.length > 0) {
-            const bounds = L.latLngBounds(validEvents.map(e => [e.lat, e.lng]));
-            map.fitBounds(bounds.pad(0.2)); // Pad to ensure markers aren't on the edge
+            if (events.length > 0 && selectedEventId === null) {
+                selectEvent(events[0].id); // Select the first event by default
+            } else if (events.length === 0) {
+                updateEventDisplay(null);
+            }
         }
-    });
-</script>
+
+        function selectEvent(eventId) {
+            selectedEventId = eventId;
+            const event = events.find(e => e.id === eventId);
+
+            if (event) {
+                renderEventList();
+
+                if (map && markers[eventId]) {
+                    map.setView([event.location.lat, event.location.lng], 15);
+                    markers[eventId].openPopup();
+                }
+
+                // Update the read-only display at the bottom
+                updateEventDisplay(event);
+
+                // Update map info display
+                document.getElementById('mapInfo').textContent = `Selected: ${event.name} at ${event.location.address}`;
+                
+            }
+        }
+
+        function renderCalendar() {
+            const calendar = document.getElementById('calendar');
+            const monthYear = document.getElementById('currentMonth');
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                                 'July', 'August', 'September', 'October', 'November', 'December'];
+
+            monthYear.textContent = `${monthNames[month]} ${year}`;
+
+            calendar.innerHTML = '';
+
+            const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-day-header';
+                header.textContent = day;
+                calendar.appendChild(header);
+            });
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day other-month';
+                day.textContent = daysInPrevMonth - i;
+                calendar.appendChild(day);
+            }
+
+            for (let i = 1; i <= daysInMonth; i++) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day';
+                day.textContent = i;
+
+                // Check if this day has events
+                const hasEvent = events.some(event => {
+                    const eventDate = event.date;
+                    // The event date object must be valid and match the calendar day/month/year
+                    return eventDate instanceof Date && !isNaN(eventDate) &&
+                            eventDate.getDate() === i &&
+                            eventDate.getMonth() === month &&
+                            eventDate.getFullYear() === year;
+                });
+
+                if (hasEvent) {
+                    day.classList.add('has-event');
+                    const dayDate = new Date(year, month, i);
+                    day.addEventListener('click', () => showEventsForDate(dayDate));
+                }
+
+                calendar.appendChild(day);
+            }
+
+            const remainingDays = 42 - (firstDay + daysInMonth);
+            for (let i = 1; i <= remainingDays; i++) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day other-month';
+                day.textContent = i;
+                calendar.appendChild(day);
+            }
+        }
+
+        function showEventsForDate(date) {
+            const dateEvents = events.filter(event =>
+                event.date.getDate() === date.getDate() &&
+                event.date.getMonth() === date.getMonth() &&
+                event.date.getFullYear() === date.getFullYear()
+            );
+
+            if (dateEvents.length > 0) {
+                // Sort by time (string comparison is fine here for 'HH:MM')
+                dateEvents.sort((a, b) => (a.time > b.time) ? 1 : ((b.time > a.time) ? -1 : 0));
+                selectEvent(dateEvents[0].id);
+            }
+        }
+
+        window.previousMonth = function() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        window.nextMonth = function() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        }
+
+        function initMap() {
+            const defaultCenter = [55.8642, -4.2518]; // Default: Glasgow
+            const firstEvent = events.find(e => e.location && e.location.lat && e.location.lng);
+            const initialCenter = firstEvent
+                ? [firstEvent.location.lat, firstEvent.location.lng]
+                : defaultCenter;
+
+            map = L.map('map').setView(initialCenter, 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Add markers for all events
+            events.forEach(event => {
+                if (event.location && event.location.lat && event.location.lng) {
+                    const dateStr = event.date.toLocaleDateString();
+                    const marker = L.marker([event.location.lat, event.location.lng])
+                        .addTo(map)
+                        .bindPopup(`
+                            <div style="color: #1a1a1a; min-width: 200px;">
+                                <h3 style="margin: 0 0 8px 0; font-size: 1rem; font-weight: 600;">${event.name}</h3>
+                                <p style="margin: 4px 0; font-size: 0.85rem;"><strong>Date:</strong> ${dateStr}</p>
+                                <p style="margin: 4px 0; font-size: 0.85rem;"><strong>Time:</strong> ${event.time}</p>
+                                <p style="margin: 4px 0; font-size: 0.85rem;"><strong>Location:</strong> ${event.location.address}</p>
+                                <p style="margin: 8px 0 0 0; font-size: 0.85rem;">${event.description}</p>
+                            </div>
+                        `);
+
+                    marker.on('click', () => {
+                        selectEvent(event.id);
+                    });
+
+                    markers[event.id] = marker;
+                }
+            });
+        }
+
+        renderEventList();
+        renderCalendar();
+        // Ensure map initializes only after the document is loaded
+        window.addEventListener('load', initMap);
+    </script>
 </body>
 </html>

@@ -1,44 +1,70 @@
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
-from django.http.response import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.template import loader
-from planner.models import *
-from planner.forms import *
+from django.utils import timezone
+# Venue is still imported but not used in event creation logic
+from .models import Venue, Event, EventOccurrence, Choices 
+from .forms import * # Assuming all forms are imported here
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.forms import AuthenticationForm
-from datetime import datetime # Needed for Mocking
+from datetime import datetime, timedelta 
+import random
+import json 
+from decimal import Decimal 
 
-class MockVenue:
-    """Mimics the Venue model attributes needed by the dashboard template."""
-    def __init__(self, name, slug):
-        self.name = name
-        self.slug = slug
+# --- Mocking Classes (Simplified to remove Venue dependency) ---
+
 class MockEvent:
     """Mimics the Event model attributes needed by the dashboard template."""
-    def __init__(self, title, slug, venue_name):
+    def __init__(self, title, slug, lat, lng, location_name):
         self.title = title
         self.slug = slug
-        # Create a mock venue instance for the foreign key relationship
-        self.venue = MockVenue(venue_name, slug.replace('-', '_')) 
-# ---------------------------------
+        self.latitude = lat
+        self.longitude = lng
+        self.location_name = location_name
 
-# Create your views here.
+class MockEventOccurrence:
+    """Mimics the EventOccurrence attributes needed by the dashboard template, 
+    including related Event data."""
+    
+    def __init__(self, title, description, start_datetime, duration_hours, attendees, category, lat, lng, location_name):
+        self.id = random.randint(100, 999) 
+        self.start_datetime = start_datetime
+        self.duration_hours = duration_hours
+        self.actual_attendees = attendees
+        
+        # 1. Create MockEvent instance with location data
+        class MockEventInternal:
+            def __init__(self, title, description, category, lat, lng, location_name):
+                self.title = title
+                self.description = description
+                self.category = category 
+                self.latitude = lat
+                self.longitude = lng
+                self.location_name = location_name
+                self.budget = 'MEDIUM'
+                self.min_group_size = 1
+                
+        self.event = MockEventInternal(title, description, category, lat, lng, location_name)
+
+# --- Helper Function (Removed serialize_venues) ---
+
+# --- Views ---
 
 def redirect_to_index(request):
     return redirect('planner:index')
 
 def index(request):
-    # This view acts as a router: Public Welcome Page
     if request.user.is_authenticated:
         return redirect('planner:dashboard')
     
-    # If not logged in, serve the public index.html page
     template = loader.get_template("planner/index.html")
     return HttpResponse(template.render())
 
 def user_login(request):
-    # Check if user is already logged in
     if request.user.is_authenticated:
         return redirect('planner:dashboard')
     
@@ -77,37 +103,155 @@ def user_logout(request):
     auth_logout(request)
     return redirect(reverse('planner:index'))
 
+@login_required
+def create_event(request):
+    
+    context = {
+        'error': None
+    }
+    
+    if request.method == 'POST':
+        # 1. Gather form data
+        event_name = request.POST.get('eventName')
+        description = request.POST.get('eventDescription')
+        
+        date_str = request.POST.get('selected_date')
+        time_str = request.POST.get('eventTime')
+        duration_hours = request.POST.get('eventDuration')
+        attendees = request.POST.get('eventAttendees')
+        
+        # NEW LOCATION DATA
+        lat_str = request.POST.get('selectedLat')
+        lng_str = request.POST.get('selectedLng')
+        location_name = request.POST.get('locationName')
+
+        # Simple Validation: Date, Time, Name, and Coordinates are required
+        if not all([event_name, date_str, time_str, lat_str, lng_str]):
+            context['error'] = 'All required fields (Name, Date, Time, Location) must be provided.'
+            return render(request, 'planner/eventCreation.html', context)
+        
+        try:
+            # Type Conversion
+            start_datetime_str = f"{date_str} {time_str}"
+            start_datetime = datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M')
+            
+            duration = Decimal(duration_hours) if duration_hours else Decimal(2.0)
+            attendee_count = int(attendees) if attendees else 0
+            
+            lat = Decimal(lat_str)
+            lng = Decimal(lng_str)
+            
+            # 2. Create the Event object with location fields
+            new_event = Event.objects.create(
+                title=event_name,
+                description=description,
+                latitude=lat,
+                longitude=lng,
+                # Use the locationName from the search, or fall back to coordinates if clicked on map
+                location_name=location_name or f'({lat_str}, {lng_str})', 
+                budget='MEDIUM', 
+                min_group_size=max(1, attendee_count),
+            )
+            
+            # 3. Create the Event Occurrence object
+            EventOccurrence.objects.create(
+                event=new_event,
+                start_datetime=start_datetime,
+                duration_hours=duration,
+                actual_attendees=attendee_count,
+            )
+            
+            # 4. Success!
+            return redirect('planner:dashboard')
+
+        except ValueError:
+            context['error'] = 'Invalid number, time, or coordinate format provided.'
+            return render(request, 'planner/eventCreation.html', context)
+        except Exception as e:
+            context['error'] = f'An unexpected error occurred during creation: {e}'
+            return render(request, 'planner/eventCreation.html', context)
+    
+    # GET request: render the empty form
+    return render(request, 'planner/eventCreation.html', context)
+
+## Existing Dashboard and Detail Views (Updated)
 
 @login_required
 def dashboard(request):
-    # 1. Attempt to fetch real events
-    events = Event.objects.filter(is_active=True).select_related('venue')
     
-    # 2. Check if the database query returned results
-    if not events.exists():
-        # --- MOCK DATA INJECTION ---
-        # Create four random events if the database is empty
-        mock_events_data = [
-            ("Glasgow Pub Quiz Night", "quiz-night", "The Old College Bar"),
-            ("Live Jazz & Blues", "live-jazz", "The Blue Arrow"),
-            ("Tech & VR Gaming Meetup", "vr-meetup", "Argyle Street VR Hub"),
-            ("West End Food Festival", "food-fest", "Kelvingrove Park"),
+    # Updated Query: use select_related('event') since 'event__venue' is gone
+    occurrences = EventOccurrence.objects.filter(
+        start_datetime__gte=timezone.now() - timedelta(days=1)
+    ).select_related('event').order_by('start_datetime')
+
+    event_data_list = []
+    
+    if not occurrences.exists():
+        # --- MOCK DATA INJECTION (Updated to use new Mock structure) ---
+        print("Using mock event data for dashboard.")
+        
+        mock_occurrences = [
+            MockEventOccurrence(
+                title="Tech Conference 2025", 
+                description="Annual technology conference.",
+                start_datetime=datetime.now().replace(day=15, hour=9, minute=0, second=0, microsecond=0) + timedelta(days=30),
+                duration_hours=Decimal(8), attendees=500, category='conference',
+                lat=55.8642, lng=-4.2518, location_name='Glasgow City Centre'
+            ),
+            MockEventOccurrence(
+                title="Design Workshop", 
+                description="Hands-on workshop.",
+                start_datetime=datetime.now().replace(day=18, hour=14, minute=0, second=0, microsecond=0) + timedelta(days=30),
+                duration_hours=Decimal(3), attendees=30, category='workshop',
+                lat=55.8700, lng=-4.2600, location_name='West End Community Hall'
+            ),
         ]
         
-        # Instantiate MockEvent objects
-        events = [MockEvent(t, s, v) for t, s, v in mock_events_data]
-        
-    # -----------------------------
+        for occurrence in mock_occurrences:
+            event_data_list.append({
+                'id': occurrence.id,
+                'name': occurrence.event.title,
+                'date_ms': int(occurrence.start_datetime.timestamp() * 1000), 
+                'time': occurrence.start_datetime.strftime('%H:%M'),
+                'duration': float(occurrence.duration_hours),
+                'category': occurrence.event.category,
+                'attendees': occurrence.actual_attendees,
+                'description': occurrence.event.description,
+                'location': {
+                    'lat': float(occurrence.event.latitude) if occurrence.event.latitude else 0.0,
+                    'lng': float(occurrence.event.longitude) if occurrence.event.longitude else 0.0,
+                    'address': occurrence.event.location_name,
+                }
+            })
+
+    else:
+        # Format real database data for the front-end
+        for occurrence in occurrences:
+            event = occurrence.event
+            event_data_list.append({
+                'id': occurrence.pk,
+                'name': event.title,
+                'date_ms': int(occurrence.start_datetime.timestamp() * 1000),
+                'time': occurrence.start_datetime.strftime('%H:%M'),
+                'duration': float(occurrence.duration_hours),
+                'category': event.category, 
+                'attendees': occurrence.actual_attendees,
+                'description': event.description,
+                'location': {
+                    # Coordinates and name are now read directly from the Event model
+                    'lat': float(event.latitude) if event.latitude else 0.0,
+                    'lng': float(event.longitude) if event.longitude else 0.0,
+                    'address': event.location_name,
+                }
+            })
 
     context = {
-        'events': events,
+        'events_json': json.dumps(event_data_list), 
     }
     return render(request, 'planner/dashboard.html', context)
 
+
 def view_event(request, event_slug):
-    """
-    Retrieves a single Event object using its slug.
-    """
     try:
         event = Event.objects.get(slug=event_slug)
     except Event.DoesNotExist:
@@ -118,9 +262,7 @@ def view_event(request, event_slug):
     return render(request, "planner/view_event.html", context=context_dict)
 
 def view_venue(request, venue_slug):
-    """
-    Retrieves a single Venue object using its slug.
-    """
+    # This view still works as it only uses the Venue model
     venue = get_object_or_404(Venue, slug=venue_slug)
     
     context_dict = {'venue': venue}
