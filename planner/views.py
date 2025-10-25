@@ -6,7 +6,10 @@ from django.contrib.auth.decorators import login_required
 from django.template import loader
 from planner.models import *
 from planner.forms import *
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib.auth.forms import AuthenticationForm
+from planner.models import *
+from planner.forms import *
 
 # Create your views here.
 
