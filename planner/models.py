@@ -41,17 +41,17 @@ class Venue(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     kind = models.CharField(max_length=20, choices=Choices.get_activity_kind(), default=("OTHER", "Other"))
-    address = models.CharField(max_length=300, blank=True)
     city = models.CharField(max_length=100, default="Glasgow")
     postcode = models.CharField(max_length=12, blank=True)
-    longitude = models.IntegerField(blank=True)
-    latitude = models.IntegerField(blank=True)
+    eastings = models.IntegerField(blank=True, default=0)
+    northings = models.IntegerField(blank=True, default=0)
     website = models.URLField(blank=True)
     phone = models.CharField(max_length=30, blank=True)
     tags = models.ManyToManyField(Tag, blank=True, related_name="venues")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     best_days = MultiSelectField(choices=Choices.get_best_days(), max_length=20)
+    slug = models.SlugField(unique=True)
 
     class Meta:
         indexes = [
@@ -60,16 +60,25 @@ class Venue(models.Model):
             models.Index(fields=["name"]),
         ]
         ordering = ["name"]
-        unique_together = [("name", "address")]
+        unique_together = [("name", "postcode")]
 
     def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = self.generate_unique_slug()
         if self.pk:
             old = Venue.objects.get(pk=self.pk)
             if old.postcode != self.postcode:
-                self.latitude, self.longitude = self.get_coordinates(self, self.postcode)
+                self.eastings, self.northings = self.get_coordinates(self.postcode)
         else:
-            self.latitude, self.longitude = self.get_coordinates(self, self.postcode)
+            self.eastings, self.northings = self.get_coordinates(self.postcode)
         super().save(*args, **kwargs)
+
+    def generate_unique_slug(self):
+        alphabet = string.ascii_letters + string.digits
+        while True:
+            random_slug = ''.join(secrets.choice(alphabet) for i in range(16))
+            if not Venue.objects.filter(slug=random_slug).exists():
+                return random_slug
 
     def get_coordinates(self, postcode):
         try:
@@ -80,7 +89,7 @@ class Venue(models.Model):
                 data = json.load(response)
             result = data.get('result')
             if result:
-                return result['latitude'], result['longitude']
+                return result['eastings'], result['northings']
         except:
             pass
         return None, None
@@ -99,8 +108,6 @@ class Event(models.Model):
     max_group_size = models.PositiveIntegerField(null=True, blank=True, help_text="Null = no hard limit")
     booking_url = models.URLField(blank=True)
 
-    avg_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0, validators=[MinValueValidator(0)])
-    rating_count = models.PositiveIntegerField(default=0)
     tags = models.ManyToManyField(Tag, blank=True, related_name="events")
 
     is_active = models.BooleanField(default=True)
@@ -133,6 +140,9 @@ class Event(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self.generate_unique_slug()
+        if self.min_group_size and self.max_group_size:
+            if self.max_group_size < self.min_group_size:
+                self.max_group_size = self.min_group_size
         super().save(*args, **kwargs)
 
     def generate_unique_slug(self):
