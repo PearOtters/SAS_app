@@ -140,7 +140,7 @@ class Event(models.Model):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     location_name = models.CharField(max_length=255, blank=True, help_text="A descriptive name or address for the location.")
 
-    budget = models.CharField(max_length=10, choices=Choices.get_budget_band(), default=("MEDIUM", "££"))
+    budget = models.CharField(max_length=10, choices=Choices.get_budget_band(), default="MEDIUM")
 
     min_group_size = models.PositiveIntegerField(default=2)
     max_group_size = models.PositiveIntegerField(null=True, blank=True, help_text="Null = no hard limit")

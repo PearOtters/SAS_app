@@ -5,7 +5,7 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.template import loader
 from django.utils import timezone
-from .models import Venue, Event, EventOccurrence, Choices 
+from .models import Venue, Event, EventOccurrence, Choices, Tag
 from .forms import * # Assuming all forms are imported here
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.forms import AuthenticationForm
@@ -100,65 +100,75 @@ def user_logout(request):
 @login_required
 def create_event(request):
     
-    context = {
-        'error': None
-    }
-    
     if request.method == 'POST':
-        event_name = request.POST.get('eventName')
-        description = request.POST.get('eventDescription')
+        form = EventCreationForm(request.POST)
         
-        date_str = request.POST.get('selected_date')
-        time_str = request.POST.get('eventTime')
-        duration_hours = request.POST.get('eventDuration')
-        attendees = request.POST.get('eventAttendees')
+        if form.is_valid():
+            data = form.cleaned_data
+            event_name = data['eventName']
+            description = data.get('eventDescription')
+            event_kind = data['eventKind']     # New
+            event_budget = data['eventBudget'] # New
+            tags_str = data.get('eventTags')   # New
+            
+            lat = data['selectedLat']
+            lng = data['selectedLng']
+            location_name = data.get('locationName') or f'({lat}, {lng})'
+            
+            date = data['selected_date']
+            time = data['eventTime']
+            duration = data.get('eventDuration') or Decimal(2.0)
+            attendee_count = data.get('eventAttendees') or 0
+            
+            start_datetime = datetime.combine(date, time)
+            
+            try:
+                new_event = Event.objects.create(
+                    title=event_name,
+                    description=description,
+                    kind=event_kind,         # Set the kind
+                    budget=event_budget,     # Set the budget
+                    latitude=lat,
+                    longitude=lng,
+                    location_name=location_name,
+                    min_group_size=max(1, attendee_count),
+                )
         
-        lat_str = request.POST.get('selectedLat')
-        lng_str = request.POST.get('selectedLng')
-        location_name = request.POST.get('locationName')
-
-        if not all([event_name, date_str, time_str, lat_str, lng_str]):
-            context['error'] = 'All required fields (Name, Date, Time, Location) must be provided.'
-            return render(request, 'planner/eventCreation.html', context)
-        
-        try:
-            start_datetime_str = f"{date_str} {time_str}"
-            start_datetime = datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M')
-            
-            duration = Decimal(duration_hours) if duration_hours else Decimal(2.0)
-            attendee_count = int(attendees) if attendees else 0
-            
-            lat = Decimal(lat_str)
-            lng = Decimal(lng_str)
-            
-            new_event = Event.objects.create(
-                title=event_name,
-                description=description,
-                latitude=lat,
-                longitude=lng,
-                location_name=location_name or f'({lat_str}, {lng_str})', 
-                budget='MEDIUM', 
-                min_group_size=max(1, attendee_count),
-            )
-            
-            EventOccurrence.objects.create(
-                event=new_event,
-                start_datetime=start_datetime,
-                duration_hours=duration,
-                actual_attendees=attendee_count,
-            )
-            
-            return redirect('planner:dashboard')
-
-        except ValueError:
-            context['error'] = 'Invalid number, time, or coordinate format provided.'
-            return render(request, 'planner/eventCreation.html', context)
-        except Exception as e:
-            context['error'] = f'An unexpected error occurred during creation: {e}'
-            return render(request, 'planner/eventCreation.html', context)
+                if tags_str:
+                    tag_names = [name.strip() for name in tags_str.split(',') if name.strip()]
+                    tag_objects = []
+                    for name in tag_names:
+                        tag, created = Tag.objects.get_or_create(name=name.lower())
+                        tag_objects.append(tag)
+                    new_event.tags.set(tag_objects)
     
-    return render(request, 'planner/eventCreation.html', context)
+                EventOccurrence.objects.create(
+                    event=new_event,
+                    start_datetime=start_datetime,
+                    duration_hours=duration,
+                    actual_attendees=attendee_count,
+                )
+                
 
+                return redirect('planner:dashboard')
+
+            except Exception as e:
+                # Catch database or other unexpected errors
+                error_message = f'An unexpected error occurred during creation: {e}'
+                # Re-render the page with the form and error
+                context = {'form': form, 'error': error_message}
+                return render(request, 'planner/eventCreation.html', context)
+        
+        else:
+            error_messages = [f"{field}: {', '.join(errors)}" for field, errors in form.errors.items()]
+            error_message = f"Please correct the errors: {'; '.join(error_messages)}"
+            context = {'form': form, 'error': error_message}
+            return render(request, 'planner/eventCreation.html', context)
+            
+    else:
+        form = EventCreationForm()
+
+    return render(request, 'planner/eventCreation.html', {'form': form})
 
 @login_required
 def dashboard(request):
