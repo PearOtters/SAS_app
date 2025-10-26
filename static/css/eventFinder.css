@@ -1,0 +1,7 @@
+#map { 
+    height: 500px; 
+    border-radius: 0.5rem; 
+}
+body {
+    font-family: 'Inter', roboto; 
+}

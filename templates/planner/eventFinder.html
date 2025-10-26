@@ -5,29 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event Finder</title>
 
-    <!-- 1. Tailwind for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- 2. Leaflet styling file -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" 
     xintegrity="sha512-Zcn6rR11GGEEtZliKYUeiCO1FmGxlUCl+2R/jQJ9P1mH1M+y/bQvE5V8c/2/NJMh/l5D5JtG/6G1C1sJmNf0g==" 
     crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-
-    <!-- 3. Leaflet map logic file -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" 
     xintegrity="sha512-PjL/v/P1Qv0TaMvMffC1JcW/vS/aPwxI/rnH/sSbeT1mLSG/fG7mXjSlCj/A/i4Q40U/wPj3/6c/p0t/jnyUuA==" 
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-    <style>
-        #map { 
-            height: 500px; 
-            border-radius: 0.5rem; 
-        }
-        body {
-            font-family: 'Inter', roboto; 
-        }
-    </style>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/eventFinder.css' %}">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -35,7 +24,6 @@
     <div class="max-w-7xl mx-auto">
         <h1 class="text-3xl font-bold mb-6 text-center">Event Finder</h1>
         
-        <!-- filter for event type -->
         <div class="mb-4">
             <label for="event-type-filter" class="block text-sm font-medium text-gray-700">Filter by event type:</label>
             <select id="event-type-filter" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
@@ -46,19 +34,16 @@
             </select>
         </div>
 
-        <!-- filter for date -->
         <div class="mb-4">
             <label for="event-date-filter" class="block text-sm font-medium text-gray-700">Filter by date:</label>
             <input type="date" id="event-date-filter" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
         </div>
 
-        <!-- filter for time -->
         <div class="mb-4">
             <label for="event-time-filter" class="block text-sm font-medium text-gray-700">Filter by time:</label>
             <input type="time" id="event-time-filter" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
         </div>
 
-        <!-- reset button -->
         <button id="reset-filters" class="w-full bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition duration-150 mb-4">
             Reset Filters
         </button>
@@ -66,96 +51,6 @@
         <div id="map"></div>
     </div>
 
-    <script>
-        // Wait for page to load
-        window.onload = function() {
-        
-            // Initialize the map
-            var map = L.map('map').setView([37.7749, -122.4194], 13); // Centered on San Francisco
-            var markerLayer = L.layerGroup().addTo(map);
-
-            // Add OpenStreetMap tiles
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
-
-            // Sample event data
-            var events = [
-                { "name": "Music Festival", "lat": 37.7749, "lng": -122.4194, "type": "music", "datetime": "2025-10-26T14:00:00" },
-                { "name": "Art Exhibition", "lat": 37.7849, "lng": -122.4094, "type": "art", "datetime": "2025-10-27T10:00:00" },
-                { "name": "Food Fair", "lat": 37.7649, "lng": -122.4294, "type": "food", "datetime": "2025-10-26T12:00:00" }
-            ];
-
-            // function to add markers to map
-            function displayEvents(eventsToShow) {
-                // wipe clean
-                markerLayer.clearLayers();
-
-                // Add markers for each event
-                eventsToShow.forEach(function(event) {
-                    
-                    // format date/time for popup
-                    var eventDate = new Date(event.datetime);
-                    var displayTime = eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    var displayDate = eventDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
-
-                    L.marker([event.lat, event.lng]).addTo(markerLayer)
-                        .bindPopup(
-                            '<b style="font-size: 1.1em;">' + event.name + '</b><br>' +
-                            '<b>Date:</b> ' + displayDate + '<br>' +
-                            '<b>Time:</b> ' + displayTime
-                        );
-                });
-            }
-
-            // find filter elements
-            var typeFilterElement = document.getElementById('event-type-filter');
-            var dateFilterElement = document.getElementById('event-date-filter');
-            var timeFilterElement = document.getElementById('event-time-filter'); // <-- Add this
-            var resetFilterButton = document.getElementById('reset-filters');
-
-            // function to update map filters
-            function updateMapFilters() {
-                var selectedType = typeFilterElement.value;
-                var selectedDate = dateFilterElement.value; // This will be "YYYY-MM-DD" or ""
-                var selectedTime = timeFilterElement.value; // This will be "HH:MM" or ""
-
-                var filteredEvents = events.filter(function(event) {
-                    // check type
-                    var typeMatch = (selectedType === 'all') || (event.type === selectedType);
-
-                    // check date
-                    var eventDate = event.datetime.split('T')[0];
-                    var dateMatch = (selectedDate === "") || (eventDate === selectedDate);
-                    
-                    // check time
-                    var eventTime = event.datetime.split('T')[1].substring(0, 5);
-                    var timeMatch = (selectedTime === "") || (eventTime === selectedTime);
-
-                    return typeMatch && dateMatch && timeMatch; // <-- Updated this
-                });
-
-                displayEvents(filteredEvents);
-            }
-
-            // function to reset filters
-            function resetFilters() {
-                typeFilterElement.value = 'all';
-                dateFilterElement.value = '';
-                timeFilterElement.value = ''; // <-- Add this
-                updateMapFilters();
-            }
-
-            // add listeners to filters
-            typeFilterElement.addEventListener('change', updateMapFilters);
-            dateFilterElement.addEventListener('change', updateMapFilters);
-            timeFilterElement.addEventListener('change', updateMapFilters); // <-- Add this
-            resetFilterButton.addEventListener('click', resetFilters);
-
-            // initial display
-            displayEvents(events);
-
-        }; // end of page load listener
-    </script>
+    <script src="{% static 'js/eventFinder.js' %}"></script>
+</body>
 </html>

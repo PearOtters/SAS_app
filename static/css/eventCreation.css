@@ -1,0 +1,374 @@
+* {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --color-accent: #00d9ff;
+      --color-primary: #7c3aed;
+      --color-dark-bg: #1a1a1a;
+      --color-card-bg: #2d1b3d;
+      --color-light-text: #a0a0a0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background: linear-gradient(135deg, var(--color-dark-bg) 0%, var(--color-card-bg) 100%);
+      color: #ffffff;
+      min-height: 100vh;
+      padding: 20px;
+      background-attachment: fixed;
+    }
+
+    .dashboard-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      border: 2px solid var(--color-accent);
+      border-radius: 12px;
+      padding: 32px;
+      background: rgba(26, 26, 26, 0.8);
+      backdrop-filter: blur(10px);
+    }
+
+    .dashboard-header {
+      margin-bottom: 32px;
+    }
+
+    .dashboard-header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--color-accent);
+      margin-bottom: 8px;
+    }
+
+    .dashboard-header p {
+      color: var(--color-light-text);
+      font-size: 1.1rem;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); 
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: rgba(45, 27, 61, 0.4);
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+    }
+
+    .card-icon {
+      width: 32px;
+      height: 32px;
+      color: var(--color-accent);
+    }
+
+    .card-header h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .calendar-container {
+      width: 100%;
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .calendar-header h3 {
+      font-size: 1.2rem;
+      color: var(--color-accent);
+    }
+
+    .calendar-nav {
+      display: flex;
+      gap: 12px;
+    }
+
+    .calendar-nav button {
+      background: rgba(0, 217, 255, 0.1);
+      border: 1px solid var(--color-accent);
+      color: var(--color-accent);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+
+    .calendar-nav button:hover {
+      background: rgba(0, 217, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+
+    .calendar-day-header {
+      text-align: center;
+      padding: 12px 8px;
+      font-weight: 600;
+      color: var(--color-accent);
+      font-size: 0.85rem;
+    }
+
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.95rem;
+    }
+
+    .calendar-day:hover {
+      background: rgba(0, 217, 255, 0.1);
+      border-color: var(--color-accent);
+      transform: scale(1.05);
+    }
+
+    .calendar-day.selected {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+      border-color: var(--color-accent);
+      font-weight: 700;
+    }
+
+    .calendar-day.other-month {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    .calendar-day.other-month:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.1);
+      transform: none;
+    }
+
+    .map-container {
+      width: 100%;
+      height: 400px;
+      background: var(--color-dark-bg);
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .map-search {
+      margin-bottom: 16px;
+    }
+
+    .map-search input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .map-search input:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .map-search input::placeholder {
+      color: var(--color-light-text);
+    }
+
+    .map-info {
+      margin-top: 16px;
+      padding: 12px;
+      background: rgba(0, 217, 255, 0.1);
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: var(--color-accent);
+    }
+    .error-message {
+        border-color: #ff0000; 
+        color: #ff0000; 
+        margin-bottom: 24px;
+        background: rgba(255, 0, 0, 0.1);
+    }
+
+    .event-form-container {
+      grid-column: 1 / -1;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-group label {
+      font-size: 0.95rem;
+      color: var(--color-light-text);
+      font-weight: 500;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+      color: #666;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
+
+    .btn {
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(0, 217, 255, 0.1);
+      border: 1px solid var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(0, 217, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .selected-info {
+      display: flex;
+      gap: 24px;
+      padding: 16px;
+      background: rgba(0, 217, 255, 0.05);
+      border: 1px solid rgba(0, 217, 255, 0.2);
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+
+    .selected-info-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .selected-info-item svg {
+      width: 20px;
+      height: 20px;
+      color: var(--color-accent);
+    }
+
+    .selected-info-item span {
+      color: #ffffff;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .dashboard-header h1 {
+        font-size: 2rem;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .selected-info {
+        flex-direction: column;
+        gap: 12px;
+      }
+    }

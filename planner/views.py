@@ -5,7 +5,6 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.template import loader
 from django.utils import timezone
-# Venue is still imported but not used in event creation logic
 from .models import Venue, Event, EventOccurrence, Choices 
 from .forms import * # Assuming all forms are imported here
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
@@ -15,10 +14,8 @@ import random
 import json 
 from decimal import Decimal 
 
-# --- Mocking Classes (Simplified to remove Venue dependency) ---
 
 class MockEvent:
-    """Mimics the Event model attributes needed by the dashboard template."""
     def __init__(self, title, slug, lat, lng, location_name):
         self.title = title
         self.slug = slug
@@ -27,8 +24,6 @@ class MockEvent:
         self.location_name = location_name
 
 class MockEventOccurrence:
-    """Mimics the EventOccurrence attributes needed by the dashboard template, 
-    including related Event data."""
     
     def __init__(self, title, description, start_datetime, duration_hours, attendees, category, lat, lng, location_name):
         self.id = random.randint(100, 999) 
@@ -36,7 +31,6 @@ class MockEventOccurrence:
         self.duration_hours = duration_hours
         self.actual_attendees = attendees
         
-        # 1. Create MockEvent instance with location data
         class MockEventInternal:
             def __init__(self, title, description, category, lat, lng, location_name):
                 self.title = title
@@ -50,9 +44,7 @@ class MockEventOccurrence:
                 
         self.event = MockEventInternal(title, description, category, lat, lng, location_name)
 
-# --- Helper Function (Removed serialize_venues) ---
 
-# --- Views ---
 
 def redirect_to_index(request):
     return redirect('planner:index')
@@ -113,7 +105,6 @@ def create_event(request):
     }
     
     if request.method == 'POST':
-        # 1. Gather form data
         event_name = request.POST.get('eventName')
         description = request.POST.get('eventDescription')
         
@@ -122,18 +113,15 @@ def create_event(request):
         duration_hours = request.POST.get('eventDuration')
         attendees = request.POST.get('eventAttendees')
         
-        # NEW LOCATION DATA
         lat_str = request.POST.get('selectedLat')
         lng_str = request.POST.get('selectedLng')
         location_name = request.POST.get('locationName')
 
-        # Simple Validation: Date, Time, Name, and Coordinates are required
         if not all([event_name, date_str, time_str, lat_str, lng_str]):
             context['error'] = 'All required fields (Name, Date, Time, Location) must be provided.'
             return render(request, 'planner/eventCreation.html', context)
         
         try:
-            # Type Conversion
             start_datetime_str = f"{date_str} {time_str}"
             start_datetime = datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M')
             
@@ -143,19 +131,16 @@ def create_event(request):
             lat = Decimal(lat_str)
             lng = Decimal(lng_str)
             
-            # 2. Create the Event object with location fields
             new_event = Event.objects.create(
                 title=event_name,
                 description=description,
                 latitude=lat,
                 longitude=lng,
-                # Use the locationName from the search, or fall back to coordinates if clicked on map
                 location_name=location_name or f'({lat_str}, {lng_str})', 
                 budget='MEDIUM', 
                 min_group_size=max(1, attendee_count),
             )
             
-            # 3. Create the Event Occurrence object
             EventOccurrence.objects.create(
                 event=new_event,
                 start_datetime=start_datetime,
@@ -163,7 +148,6 @@ def create_event(request):
                 actual_attendees=attendee_count,
             )
             
-            # 4. Success!
             return redirect('planner:dashboard')
 
         except ValueError:
@@ -173,48 +157,38 @@ def create_event(request):
             context['error'] = f'An unexpected error occurred during creation: {e}'
             return render(request, 'planner/eventCreation.html', context)
     
-    # GET request: render the empty form
     return render(request, 'planner/eventCreation.html', context)
 
-## Existing Dashboard and Detail Views (Updated)
 
 @login_required
 def dashboard(request):
     
-    # --- NEW: Get filter parameters from GET request ---
     search_name = request.GET.get('search_name')
     budget = request.GET.get('budget')
     kind = request.GET.get('kind') # NEW: Get the 'kind' filter
     min_attendees_str = request.GET.get('min_attendees')
     
-    # Start with the base queryset
     occurrences_queryset = EventOccurrence.objects.filter(
         start_datetime__gte=timezone.now() - timedelta(days=1)
     ).select_related('event').order_by('start_datetime')
 
-    # --- NEW: Apply Filters ---
 
-    # 1. Search by Name (Remains the same)
     if search_name:
         occurrences_queryset = occurrences_queryset.filter(
             event__title__icontains=search_name
         )
     
-    # 2. Filter by Budget (Remains the same)
     if budget and budget in [choice[0] for choice in Choices.get_budget_band()]:
         occurrences_queryset = occurrences_queryset.filter(
             event__budget=budget
         )
         
-    # 3. NEW: Filter by Kind
     if kind and kind in [choice[0] for choice in Choices.get_event_kind()]:
         occurrences_queryset = occurrences_queryset.filter(
             event__kind=kind
         )
     
-    # 4. Filter by Minimum Attendees (Remains the same)
     if min_attendees_str:
-        # ... (logic remains the same)
         try:
             min_attendees = int(min_attendees_str)
             occurrences_queryset = occurrences_queryset.filter(
@@ -223,30 +197,25 @@ def dashboard(request):
         except ValueError:
             pass
 
-    # Update Query: use the filtered queryset
     occurrences = occurrences_queryset 
 
     event_data_list = []
     
-    # --- Mock Data Logic Update ---
     if not occurrences.exists() and not (search_name or budget or kind or min_attendees_str): 
         print("Using mock event data for dashboard.")
         
-        # NOTE: MockEventOccurrence needs to be updated manually 
-        # to properly set category/kind for filtering testing
-        # Since MockEventOccurrence doesn't have budget defined, we'll manually set it for the mock
         class MockEventInternal:
-            def __init__(self, title, description, category, lat, lng, location_name, budget='MEDIUM'): # ADDED BUDGET
+            def __init__(self, title, description, category, lat, lng, location_name, budget='MEDIUM'):
                 self.title = title
                 self.description = description
                 self.category = category 
                 self.latitude = lat
                 self.longitude = lng
                 self.location_name = location_name
-                self.budget = budget # Use budget here
+                self.budget = budget
                 self.min_group_size = 1
 
-        class MockEventOccurrenceUpdated: # Updated Mock to support budget
+        class MockEventOccurrenceUpdated:
             def __init__(self, title, description, start_datetime, duration_hours, attendees, category, lat, lng, location_name, budget='MEDIUM'):
                 self.id = random.randint(100, 999) 
                 self.start_datetime = start_datetime
@@ -255,19 +224,19 @@ def dashboard(request):
                 self.event = MockEventInternal(title, description, category, lat, lng, location_name, budget)
 
         mock_occurrences = [
-            MockEventOccurrenceUpdated( # UPDATED CALL
+            MockEventOccurrenceUpdated(
                 title="Tech Conference 2025", 
                 description="Annual technology conference.",
                 start_datetime=datetime.now().replace(day=15, hour=9, minute=0, second=0, microsecond=0) + timedelta(days=30),
                 duration_hours=Decimal(8), attendees=500, category='Conference',
-                lat=55.8642, lng=-4.2518, location_name='Glasgow City Centre', budget='HIGH' # ADDED BUDGET
+                lat=55.8642, lng=-4.2518, location_name='Glasgow City Centre', budget='HIGH'
             ),
-            MockEventOccurrenceUpdated( # UPDATED CALL
+            MockEventOccurrenceUpdated(
                 title="Design Workshop", 
                 description="Hands-on workshop.",
                 start_datetime=datetime.now().replace(day=18, hour=14, minute=0, second=0, microsecond=0) + timedelta(days=30),
                 duration_hours=Decimal(3), attendees=30, category='Workshop',
-                lat=55.8700, lng=-4.2600, location_name='West End Community Hall', budget='LOW' # ADDED BUDGET
+                lat=55.8700, lng=-4.2600, location_name='West End Community Hall', budget='LOW'
             ),
         ]
         
@@ -280,7 +249,7 @@ def dashboard(request):
                 'duration': float(occurrence.duration_hours),
                 'category': occurrence.event.category,
                 'attendees': occurrence.actual_attendees,
-                'budget': occurrence.event.budget, # NEW: Include budget for mock data
+                'budget': occurrence.event.budget,
                 'location': {
                     'lat': float(occurrence.event.latitude) if occurrence.event.latitude else 0.0,
                     'lng': float(occurrence.event.longitude) if occurrence.event.longitude else 0.0,
@@ -288,7 +257,6 @@ def dashboard(request):
                 }
             })
     
-    # --- Real Data Logic Update ---
     elif occurrences.exists():
         for occurrence in occurrences:
             event = occurrence.event
@@ -301,7 +269,7 @@ def dashboard(request):
                 'category': event.category, 
                 'attendees': occurrence.actual_attendees,
                 'description': event.description,
-                'budget': event.budget, # NEW: Include budget for real data
+                'budget': event.budget,
                 'location': {
                     'lat': float(event.latitude) if event.latitude else 0.0,
                     'lng': float(event.longitude) if event.longitude else 0.0,
@@ -326,7 +294,6 @@ def view_event(request, event_slug):
     return render(request, "planner/view_event.html", context=context_dict)
 
 def view_venue(request, venue_slug):
-    # This view still works as it only uses the Venue model
     venue = get_object_or_404(Venue, slug=venue_slug)
     
     context_dict = {'venue': venue}
